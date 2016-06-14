@@ -1,46 +1,28 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper,11pt,DIV=16]{scrartcl}
+\usepackage{ucs}
+\usepackage{array}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[normalem]{ulem}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}\hypersetup{colorlinks=true,hypertexnames=false}
+\usepackage[osf,sc]{mathpazo}
+\usepackage{booktabs}
+\usepackage{graphicx}
 
-%% for fancy tables
-\usepackage{tabu}
-\usepackage{array,booktabs}
-\newcolumntype{L}{@{}>{\kern\tabcolsep}l<{\kern\tabcolsep}}
-\usepackage{colortbl}
-\usepackage[usenames,dvipsnames]{xcolor}
-
+\usepackage[usenames,dvipsnames]{xcolor}\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\usepackage[english]{babel}
+\usepackage{minted}\usemintedstyle{emacs}
+\usepackage{listings}
 \usepackage{multirow}
 
-
-\usepackage{nicefrac}
-
-%% for drawings on top of tables
-\usepackage{tikz}
-\usetikzlibrary{calc}
-\usetikzlibrary{fadings,shapes.arrows}
-\usepackage{pgflibraryarrows} % for triangle arrows
-
-
-
-\tikzset{My Arrow Style/.style={single arrow, fill=red!50, anchor=base, align=center,text width=2.8cm}}
-\newcommand{\MyArrow}[2][]{\tikz[baseline] \node [My Arrow Style,#1] {#2};}
-
-%% for url
-\usepackage{hyperref}
-
-
-\usepackage[english]{babel}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\usepackage[colorinlistoftodos]{todonotes}
-
-%% for ding arrows
-\usepackage{pifont}
-
-%% \usepackage{natbib}
+\usepackage{algorithm}
+\usepackage{algorithmic}
 
 \title{Report : Operational Feature Selection in Gaussian Mixture Models}
 
-\usepackage{natbib}
 
 \author{Adrien Lagrange
 \\
@@ -62,9 +44,6 @@
 \section{Introduction}
 
 ...
-
-
-
 
 
 \section{Non linear parsimonious features selection}
@@ -106,48 +85,16 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
         \label{eq:decision}
     \end{align}
 
-    It is interesting to notice the covariance and its inverse are a key element of the decision function and that the estimation of these elements suffer from the curse of dimensionality. More precisely, the number of parameters to estimate (means, covariance matrices, proportions) increases quadratically relatively to the number of features and we need at least as many samples as parameters which can be an issue. For example, with hyperspectral data, we face high dimensional samples but very few samples are available.
+    It is interesting to notice the covariance and its inverse are a key element of the decision function and that the estimation of these elements suffer from the curse of dimensionality. More precisely, the number of parameters to estimate (means, covariance matrices, proportions) increases quadratically relatively to the number of features and we need at least as many samples as parameters to make an estimation which can be an issue. For example, with hyperspectral data, we face high dimensional samples but very few samples are available.
 
     A lack of samples induces ill-conditioned covariance matrices and so unstable inversion. There are two major solutions to this problem. The first option is to use a regularization method to stabilize the inversion of the covariance matrices. The second option is to use a features extraction method in order to reduce the dimensionality of the samples.
 
     In our study based on GMM, a Ridge regularization method described in Section \ref{sec:regularization} is implemented but we mainly focus on a feature selection method named sequential forward features selection presented in Section \ref{sec:forward-presentation} and an amelioration of this algorithm the sequential floating forward features selection introduced in Section \ref{sec:floating-presentation}.
 
-
-    \subsection{Ridge Regularization}
-    \label{sec:regularization}
-
-    As introduced in the previous section, the aim of a regularization method is to stabilize the inversion of the covariance matrix in the context of high dimensionality which often imply a ill-conditioned matrix. In particular, the Ridge regularization proposes to solve the problem in adding a small value $\tau$ to each eigenvalues of the covariance matrix. In our case, we choose to add the same constant to each eigenvalues but it is not compulsory in a general case.
-
-    Thus, to perform the regularization, the covariance matrix is decomposed with a diagonalization algorithm for symmetric matrices s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$ where $\mathbf{Q}$ is the matrix of eigenvectors and $\boldsymbol{\Lambda}$ is the diagonal matrix of eigenvalues. When the decomposition is available, the regularization almost finish and the decision function is simply rewritten as follow
-
-    \begin{align}
-        Q_c(\mathbf{x}) = - (\mathbf{x} - \boldsymbol{\mu}_c)^t \mathbf{Q}_c (\boldsymbol{\Lambda}_c + \mathbf{T})^{-1} \mathbf{Q}_c^t (\mathbf{x} - \boldsymbol{\mu}_c) - \log ((2\pi)^d|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)
-    \end{align}
-    where $\mathbf{T}$ is a diagonal matrix with all element set to $\tau$. It is to be noticed that $(\boldsymbol{\Lambda} + \mathbf{T})$ is also a diagonal matrix and so the inverse is easily obtained in inverting each element of the matrix.
-
-    Finally, the main step of the regularization is the decomposition of the covariance matrix. But we need also to take into account that the choice of $\tau$ is not automatic. In order to find the right $\tau$, the user has to perform a gridsearch which is a major drawback of this method.
-
-
-    \subsection{Sequential forward features selection}
-    \label{sec:forward-presentation}
-
-    The Sequential Forward Selection (SFS) starts with an empty set of selected features. Then it tests at each step for all the remaining features the value of a given criterion function when the feature is added to the pool of selected features. The feature that maximizes the criterion function is definitively added to the pool of selected features and it moves to the next iteration. The choice of the criterion function is discussed afterward in Section \ref{sec:criterion}. Depending of the stopping criterion chosen by user, the algorithm stops either when a given number of variables has been selected or either when the percentage of increase of the criterion function is too low.
-
-    To summarize, the features are selected one by one and the set of selected features are never put into questions. It results in a reasonable computational time but a suboptimal solution to the selection problem.
-
-    \subsection{Sequential floating forward feature selection}
-    \label{sec:floating-presentation}
-
-    The Sequential Floating Forward Selection (SFFS) is actually based on two algorithms: the SFS described above and the Sequential Backward Selection (SBS). The SBS is the backward equivalent of SFS. The difference is that it starts with every features in the pool of selected features and tries at each step to remove the less significant one in term of a given criterion function.
-
-    The SFFS works as the SFS but between each step of the SFS algorithm a backward selection is operated. At the end of the SBS step, the value of the criterion function is compared to the best value ever obtained with a set of features of the same size and if the new value is better the feature puts into question is effectively taken away and the next step is again a SBS but if the new value is not better the SBS step is forgotten and it moves to the next SFS step. The algorithm stops when a given number of features has been selected.
-
-    This SFFS algorithm eventually tests more solutions than the SFS algorithm. The results are expected to be better but the trade-off is an increased computational time which is dependent of the complexity of the dataset.
+    In order to evaluate the benefits of such methods for classification, we introduce in the next section several functions called criterion functions. These functions aim either to evaluate a criterion of good classification or either to evaluate the separability/similarity of class distributions. The choice of one of these criterion functions is up to the user and can depend on the specificity of the task. We purposely choose to present only some of possible functions among the most used. It is also to be noticed that the criterion function is not only use for evaluation in the case of the features selection algorithm presented hereafter but is indeed a parameter of the algorithm.
 
     \subsection{Criterion function}
     \label{sec:criterion}
-
-    Both of the presented algorithms rely on a criterion function which can be chosen by the user. We decided to test the most frequent criterion functions. These functions can be divided in two groups. The first group is based on measures of good classification and the second on measure of similarity between distribution of probabilities.
 
         \subsubsection{Measures of good classification}
 
@@ -156,7 +103,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
         \begin{figure}[!ht]
             \centering
             \begin{tabular}{c >{\bfseries}r @{\hspace{0.7em}}c @{\hspace{0.4em}}c @{\hspace{0.7em}}l}
-              \multirow{10}{*}{\parbox{1.1cm}{\bfseries\raggedleft actual\\ value}} &
+              \multirow{10}{*}{\parbox{1.1cm}{\bfseries\raggedleft Actual\\ value}} &
                 & \multicolumn{2}{c}{\bfseries Prediction outcome} \\
               & & \bfseries p & \bfseries n \\
               & p$'$ & \MyBox{True}{Positive} & \MyBox{False}{Negative} \\[2.4em]
@@ -189,20 +136,19 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
         \end{equation}
         And in the case of Gaussian model, it can be rewritten as follows
         \begin{align}
-            \text{Div}_{KL}(c_i,c_j) = \frac{1}{2} \Biggl( &\text{Tr} (\boldsymbol{\Sigma}_{c_i}^{-1} \boldsymbol{\Sigma}_{c_j}) + (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i})^t \boldsymbol{\Sigma}_{c_i}^{-1} (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i}) \nonumber \\
-            &- k + \log \left( \frac{|\boldsymbol{\Sigma}_{c_i}|}{|\boldsymbol{\Sigma}_{c_j}|} \right) \Biggr)
+            \text{Div}_{KL}(c_i,c_j) = \frac{1}{2} \left( \text{Tr} (\boldsymbol{\Sigma}_{c_i}^{-1} \boldsymbol{\Sigma}_{c_j}) + (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i})^t \boldsymbol{\Sigma}_{c_i}^{-1} (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i}) - d + \log \left( \frac{|\boldsymbol{\Sigma}_{c_i}|}{|\boldsymbol{\Sigma}_{c_j}|} \right) \right)
         \end{align}
         where Tr is the trace operator and $k$ the dimension of the distribution.
 
         It can be noticed that the KL divergence is not symmetric and so the symmetrized version is used to compute the criterion function. In the case of Gaussian model, the symmetrization induces the following simplification of the formula
         \begin{align}
-            \frac{1}{2} (\text{Div}_{KL}(c_i,c_j) + \text{Div}_{KL}(c_j,c_i)) = \frac{1}{4} \Biggl( &\text{Tr} (\boldsymbol{\Sigma}_{c_i}^{-1} \boldsymbol{\Sigma}_{c_j} + \boldsymbol{\Sigma}_{c_j}^{-1} \boldsymbol{\Sigma}_{c_i}) \nonumber \\
-            &+ (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i})^t (\boldsymbol{\Sigma}_{c_i}^{-1} + \boldsymbol{\Sigma}_{c_j}^{-1}) (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i}) \Biggr)
+            \text{SKL}_{ij} &=\text{Div}_{KL}(c_i,c_j) + \text{Div}_{KL}(c_j,c_i) \nonumber \\
+            &= \frac{1}{2} \left( \text{Tr} (\boldsymbol{\Sigma}_{c_i}^{-1} \boldsymbol{\Sigma}_{c_j} + \boldsymbol{\Sigma}_{c_j}^{-1} \boldsymbol{\Sigma}_{c_i}) + (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i})^t (\boldsymbol{\Sigma}_{c_i}^{-1} + \boldsymbol{\Sigma}_{c_j}^{-1}) (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i}) - 2d \right)
         \end{align}
 
         Moreover, the divergence is computed between two classes and to obtain a unique value the weighted mean of divergence measures is taken
         \begin{equation}
-            \text{Div}_{KL} = \sum_{c_i=1}^{C} \sum_{c_j=c_i + 1}^{C} \pi_{c_i} \pi_{c_j} \frac{1}{2} (\text{Div}_{KL}(c_i,c_j) + \text{Div}_{KL}(c_j,c_i))
+            \text{C}_{SKL} = \sum_{i=1}^{C} \sum_{j=i + 1}^{C} \pi_{c_i} \pi_{c_j} \text{SKL}_{ij}
         \end{equation}
 
         \paragraph{The Bhattacharyya distance} is an other measure of similarity between two distributions. In fact, we do not discuss the efficiency of this measure in our work and simply used it to compute the next measure. The Bhattacharyya distance is computed as follows
@@ -229,115 +175,232 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
         According to \cite{bruzzone2009novel}, it is interesting to notice that the KL divergence increases quadratically with respect to the distance between the mean vectors of the class distributions whereas the measures of good classification we used asymptotically tends to one when distributions are perfectly separable. On the contrary, the JM distance tends to saturate as these measures of good classification.
 
-    \section{Implementation}
+
+\section{Ridge Regularization}
+\label{sec:regularization}
+
+    \subsection{Principe of Ridge Regularization}
+    As introduced in the previous section, the aim of a regularization method is to stabilize the inversion of the covariance matrix in the context of high dimensionality which often imply a ill-conditioned matrix. In particular, the Ridge regularization proposes to solve the problem in adding a small value $\tau$ to each eigenvalues of the covariance matrix. In our case, we choose to add the same constant to each eigenvalues but it is not compulsory in a general case.
+
+    Thus, to perform the regularization, the covariance matrix is decomposed with a diagonalization algorithm for symmetric matrices s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$ where $\mathbf{Q}$ is the matrix of eigenvectors and $\boldsymbol{\Lambda}$ is the diagonal matrix of eigenvalues. When the decomposition is available, the regularization almost finish and the decision function is simply rewritten as follow
+
+    \begin{align}
+    \label{eq:decision-ridge}
+        Q_c(\mathbf{x}) = - (\mathbf{x} - \boldsymbol{\mu}_c)^t \mathbf{Q}_c (\boldsymbol{\Lambda}_c + \tau \mathbf{I})^{-1} \mathbf{Q}_c^t (\mathbf{x} - \boldsymbol{\mu}_c) - \log ((2\pi)^d|\boldsymbol{\Sigma}_c + \tau \mathbf{I}|) + 2 \log (\pi_c)
+    \end{align}
+    where $\mathbf{I}$ is the identity matrix. It is to be noticed that $(\boldsymbol{\Lambda} + \tau \mathbf{I})$ is also a diagonal matrix and so the inverse is easily obtained in inverting each element of the matrix.
+
+    \subsection{Implementation}
+
+    The main steps of the training algorithm when using Ridge regularization are summarized in Algorithm \ref{alg:ridge}. Indeed, before training the GMM model, a preliminary step is needed in order to determine a good value for the parameter $\tau$ and to do so, a gridsearch is performed with a set of values $\mathcal{P}$ given by the user. Moreover, to have a good estimation of the quality of the classification with a given $\tau$ a cross-validation method is used. Thus, the training set is divided in k folds, then, the training is done with $(k-1)$ folds and the performances are estimated with the remaining fold.
+
+    A particularity of this regularization method is used to accelerate the gridsearch. More precisely, the two computationally costly step are the computation of the inverse and the determinant of the regularized covariance matrices and it is important to see that these operations can be performed only once to test all $\tau$. The covariance matrix is diagonalized before selecting $\tau$ and the eigenvalues and eigenvectors are stored and used to test all $\tau$ using Equation \ref{eq:decision-ridge}.
+
+    \begin{algorithm}
+    \caption{Ridge Regularization training steps\label{alg:ridge}}
+    \begin{algorithmic}[1]
+    \REQUIRE $\mathcal{S},k,\mathcal{P}$
+    \STATE Randomly cut $\mathcal{S}$ in $k$ subsets such as $\mathcal{S}_1 \cup \text{...} \cup \mathcal{S}_k = \mathcal{S}$ and $\mathcal{S}_i \cap \mathcal{S}_j = \emptyset$
+    \FORALL{$\mathcal{S}_i$}
+    \STATE Learn GMM with $\mathcal{S} \setminus \mathcal{S}_i$
+    \STATE Compute decomposition of covariance matrices of each classes s.t. $\boldsymbol{\Sigma}_c = \mathbf{Q}_c \boldsymbol{\Lambda}_c \mathbf{Q}_c^t$
+    \FORALL{$\tau \in \mathcal{P}$}
+    \STATE Estimate classification rate on $\mathcal{S}_i$ using Equation \ref{eq:decision-ridge}
+    \ENDFOR
+    \ENDFOR
+    \STATE Average the classification rate over the $k$ folds
+    \STATE Compute $\text{arg} \max_{\tau}$ of the classification rates to get the best parameter $\tau^*$
+    \STATE Learn GMM with the whole training set $\mathcal{S}$ and parametrize the GMM with $\tau^*$
+    \end{algorithmic}
+    \end{algorithm}
+
+    Finally, another trick could used to optimize the gridsearch. As explained in the next section, it is possible to avoid the learning step on the $(k-1)$ fold and instead learn the model with the whole dataset and deduce the submodel used for cross-validation from the complete model and the mean vector and covariance matrix of the $k^{th}$ fold.
+
+    As stated before, we choose to implement a basic Ridge regression method and only the small improvement explained herebefore as been proposed. To the contrary, we choose in our study to focus more on a feature selection method named sequential forward features selection described in following section.
+
+\section{Features selection}
+
+We remains that the aim of feature selection method is to select a subset of variables to described each samples and so to get rid of high dimensionality and its curse. It is also important to underline that the proposed method is a \emph{selection} method and not an \emph{extraction} method. It means the subset of variables obtained at the end is composed of actual variables of the original set and not variables built as combination of several others as it is the case for example with PCA. This choice is made to assure an easier interpretation by the user of the obtained subset of variables.
+
+Two selection algorithms are presented the sequential forward features selection method (Section \ref{sec:forward-presentation}) and the sequential floating forward feature selection method (\ref{sec:floating-presentation}) the second being a more complex variation of the first.
+
+    \subsection{Sequential forward features selection}
+    \label{sec:forward-presentation}
+
+    The Sequential Forward Selection (SFS) starts with an empty set of selected features. Then it tests at each step for all the remaining features the value of a criterion function $J$ chosen by the user among the ones presented in Section \ref{sec:criterion} when the feature is added to the pool of selected features. The feature that maximizes the criterion function is definitively added to the pool of selected features and it moves to the next iteration. The choice of the criterion function is discussed afterward in Section \ref{sec:criterion}. The algorithm stops when a given number of variables $\text{maxVar}$ has been selected.
+
+    To summarize, the features are selected one by one and the set of selected features are never put into questions. It results in a reasonable computational time but a suboptimal solution to the selection problem.
+
+    \begin{algorithm}
+    \caption{Sequential forward features selection\label{alg:sfs}}
+    \begin{algorithmic}[1]
+    \REQUIRE $\mathcal{S},J,\text{maxVar}$
+    \STATE $S=\emptyset$
+    \STATE $F=\text{\{all variables\}}$
+    \WHILE{Repeat till $S$ contained $\text{maxVar}$ variables}
+    \FORALL{$f_i \in F$}
+    \STATE $R_i = J(\{S + f_i\})$
+    \ENDFOR
+    \STATE $j=\text{arg} \max_{i} R_i$
+    \STATE $S = \{S + f_j\}$
+    \STATE $F = F \setminus f_j$
+    \ENDWHILE
+    \RETURN $S$
+    \end{algorithmic}
+    \end{algorithm}
+
+    \subsection{Sequential floating forward feature selection}
+
+    \label{sec:floating-presentation}
+
+    The Sequential Floating Forward Selection (SFFS) is actually based on two algorithms: the SFS described above and the Sequential Backward Selection (SBS). The SBS is the backward equivalent of SFS. The difference is that it starts with every features in the pool of selected features and tries at each step to remove the less significant one in term of the given criterion function.
+
+    The SFFS works as the SFS but between each step of the SFS algorithm a backward selection is operated. At the end of the SBS step, the value of the criterion function is compared to the best value ever obtained with a set of features of the same size and if the new value is better the feature puts into question is effectively taken away and the next step is again a SBS but if the new value is not better the SBS step is forgotten and it moves to the next SFS step. The algorithm stops when a given number of features has been selected.
+
+    This SFFS algorithm eventually tests more solutions than the SFS algorithm. The results are expected to be better but the trade-off is an increased computational time which is dependent of the complexity of the dataset.
+
+    \begin{algorithm}
+    \caption{Sequential floating forward features selection\label{alg:sffs}}
+    \begin{algorithmic}[1]
+    \REQUIRE $\mathcal{S},J,\text{maxVar}$
+    \STATE $S=\emptyset$
+    \STATE $F=\text{\{all variables\}}$
+    \STATE $k=0$
+    \WHILE{Repeat till $S$ contained $\text{maxVar}$ variables}
+    \FORALL{$f_i \in F$}
+    \STATE $R_i = J(\{S{(k)} + f_i\})$
+    \ENDFOR
+    \STATE $j=\text{arg} \max_{i} R_i$
+    \IF{$R_j \geq J(S^{(k+1)})$}
+    \STATE $k=k+1$
+    \ELSE
+    \STATE $S^{(k+1)} = \{S{(k)} + f_i\}$
+    \STATE $k=k+1$
+    \STATE $\text{flag}=1$
+    \WHILE{$k > 2 \text{ and } \text{flag}=1$}
+    \FORALL{$f_i \in S^{(k)}$}
+    \STATE $R_i = J(\{S{(k)}\setminus f_i\})$
+    \ENDFOR
+    \STATE $j=\text{arg} \max_{i} R_i$
+    \IF{$R_j < J(S^{(k-1)})$}
+    \STATE $S^{(k-1)} = \{S{(k)} \setminus f_i\}$
+    \STATE $k=k-1$
+    \ELSE
+    \STATE $\text{flag}=0$
+    \ENDIF
+    \ENDWHILE
+    \ENDIF
+    \ENDWHILE
+    \RETURN $S$
+    \end{algorithmic}
+    \end{algorithm}
+
+    \subsection{Implementation}
     In term of computational efficiency, the main issue is to find an efficient way to compute the mean vector and the covariance matrix and its inverse and to do it only when it is absolutely necessary. More specifically, we develop an optimized way to derive the submodel for cross-validation from the full model and we minimize the number of costly operations during a step of the selection algorithm.
 
-        \subsection{Update for cross validation}
+        \subsubsection{Update for cross validation}
 
-        Based on \cite{fauvel2015fast}, a method to accelerate the cross-validation process in the case of criterion functions based on correct classification measures was implemented. The idea is to estimate the GMM model with the whole training set and when the training set is split in several folds to use this model to derive the model corresponding to a subset of the original training set.
+        Based on \cite{fauvel2015fast}, a method to accelerate the k-fold cross-validation process in the case of criterion functions based on correct classification measures was implemented. The idea is to estimate the GMM model with the whole training set and then, instead of training a model on $(k-1)$ folds, the complete model and the mean vector and the covariance matrix of the $k^{th}$ fold is used to derive the corresponding submodel.
 
         The following formulae can be obtained (details of calculation in Appendix \ref{app:cv_maj})
-
-        {\footnotesize
         \begin{align}
             \boldsymbol{\mu}_c^{n_c-\nu_c} &= \frac{n_c \boldsymbol{\mu}_c^{n_c} - \nu_c \boldsymbol{\mu}_c^{\nu_c}}{n_c - \nu_c} \\
             \boldsymbol{\Sigma}_c^{n_c-\nu_c} &= \frac{1}{n_c-\nu_c-1} ( (n_c-1) \boldsymbol{\Sigma}_c^{n_c} - (\nu_c-1) \boldsymbol{\Sigma}_c^{\nu_c} - \frac{n_c \nu_c}{(n_c-\nu_c)} (\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})(\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})^t)
         \end{align}
-        }%
         where $\nu_c$ is the number of samples of class $c$ removed from the set.
 
-        Additionally, the update of the GMM model is the occasion to precompute the constants $2 \log (\pi_c)$ which is a term of the decision function constant for a given training set.
+        Additionally, the update of the GMM model is the occasion to precompute and store the constant $2 \log (\pi_c)$ which is a term of the decision function constant for a given training set.
 
-        \subsection{Criterion function computation}
+        \subsubsection{Criterion function computation}
 
-        As explained earlier, at each iteration the SFS and SFFS algorithms compute the value of a criterion function for every possible set of features composed of the selected ones augmented by one of the remaining features. One of the main achievements of this work is to reduce the computational time needed to compute the criterion function of the augmented sets.
+        As explained earlier, at each iteration the SFS and SFFS algorithms compute the value of a criterion function for every possible set of features composed of the selected ones augmented by one of the remaining features. One of the main achievements of this work is to reduce the computational time needed to compute the criterion function of augmented sets.
 
-        We note $\boldsymbol{\Sigma}_{k-1}$ the covariance matrix of the $k-1^{th}$ iteration, i.e., the covariance of the selected features and $\boldsymbol{\Sigma}_{k}$ the covariance matrix of the $k^{th}$ iteration, i.e., the covariance of the augmented set. Then, the terms $\boldsymbol{\Sigma}_k^{-1}$, $\mathbf{x}_k^t \boldsymbol{\Sigma}_k^{-1} \mathbf{x}_k$ and $|\boldsymbol{\Sigma}_k|$ can be expressed in function of terms of the $k-1^{th}$ iteration. These update rules are summed up hereafter and are available in \cite{webb2003statistical} (chapter 9.2).
+        We note $\boldsymbol{\Sigma}^{(k-1)}$ the covariance matrix of the $k-1^{th}$ iteration, i.e., the covariance of the selected features and $\boldsymbol{\Sigma}^{(k)}$ the covariance matrix of the $k^{th}$ iteration, i.e., the covariance of the augmented set. Then, the inverse of the covariance matrix $(\boldsymbol{\Sigma}^{(k)})^{-1}$, the quadratical term $(\mathbf{x}^{(k)})^t (\boldsymbol{\Sigma}^{(k)})^{-1} \mathbf{x}^{(k)}$ and the determinant $\log |\boldsymbol{\Sigma}^{(k)}|$ can be expressed in function of terms of the $(k-1)^{th}$ iteration. These calculi use the fact that the covariance matrix is a positive definite symmetric matrix to simplify formulae using matrices defined by blocks. These update rules are summed up hereafter and are available in \cite{webb2003statistical} (chapter 9.2).
 
-        As $\boldsymbol{\Sigma}_k$ is a positive definite symmetric matrix, we can use the following notation
+        As $\boldsymbol{\Sigma}^{(k)}$ is a positive definite symmetric matrix, we can use the following notation
         \begin{equation*}
-            \boldsymbol{\Sigma}_k =
+            \boldsymbol{\Sigma}^{(k)} =
             \bigg[\begin{array}{cc}
-            \boldsymbol{\Sigma}_{k-1} & \mathbf{u}      \\
+            \boldsymbol{\Sigma}^{(k-1)} & \mathbf{u}      \\
             \mathbf{u}^t          & \sigma_{kk} \\
             \end{array}\bigg]
         \end{equation*}
-        where $\mathbf{u}$ is the $k^{th}$ column of the matrix without the diagonal element i.e. $\mathbf{u}_{i} = \boldsymbol{\Sigma}_{i+1,k}$ with $i \in [1,k-1]$.
+        where $\mathbf{u}$ is the $k^{th}$ column of the matrix without the diagonal element i.e. $\mathbf{u}_{i} = \boldsymbol{\Sigma}^{(k)}_{i+1,k}$ with $i \in [1,k-1]$.
 
-        Using the formula of the inverse of a block matrix, the following formula expressing $\boldsymbol{\Sigma}_k^{-1}$ in function of $\boldsymbol{\Sigma}_{k-1}^{-1}$ is obtained
+        Using the formula of the inverse of a block matrix, the following formula expressing $(\boldsymbol{\Sigma}^{(k)})^{-1}$ in function of $(\boldsymbol{\Sigma}^{(k-1)})^{-1}$ is obtained
         \begin{equation}
             \fbox{$
-            \boldsymbol{\Sigma}_k^{-1} =
+            (\boldsymbol{\Sigma}^{(k)})^{-1} =
             \bigg[\begin{array}{cc}
-            \boldsymbol{\Sigma}_{k-1}^{-1} + \frac{1}{\alpha} \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u} \mathbf{u}^t \boldsymbol{\Sigma}_{k-1}^{-1} & - \frac{1}{\alpha} \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u} \\
-            - \frac{1}{\alpha} \mathbf{u}^t \boldsymbol{\Sigma}_{k-1}^{-1}                                                                          & \frac{1}{\alpha}                  \\
+            (\boldsymbol{\Sigma}^{(k-1)})^{-1} + \frac{1}{\alpha} (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u} \mathbf{u}^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} & - \frac{1}{\alpha} (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u} \\
+            - \frac{1}{\alpha} \mathbf{u}^t (\boldsymbol{\Sigma}^{(k-1)})^{-1}                                                                          & \frac{1}{\alpha}                  \\
             \end{array}\bigg]
             $}
         \end{equation}
-        where $ \alpha = \sigma_{kk} - \mathbf{u}^t \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u} $.
+        where $ \alpha = \sigma_{kk} - \mathbf{u}^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u} $.
 
-        In the case of a backward step in SFFS algorithm, we need to invert the formula in order to compute $\boldsymbol{\Sigma}_{k-1}^{-1}$ knowing $\boldsymbol{\Sigma}_k^{-1}$. Then, if we use the following notation for the previous matrix
+        In the case of a backward step in SFFS algorithm, we need to invert the formula in order to compute $(\boldsymbol{\Sigma}^{(k-1)})^{-1}$ knowing $(\boldsymbol{\Sigma}^{(k)})^{-1}$. Then, if we use the following notation for the previous matrix
         \begin{equation*}
-            \boldsymbol{\Sigma}_k^{-1} =
+            (\boldsymbol{\Sigma}^{(k)})^{-1} =
             \bigg[\begin{array}{cc}
             \mathbf{A}   & \mathbf{v} \\
             \mathbf{v}^t & \frac{1}{\alpha} \\
             \end{array}\bigg]
         \end{equation*}
-        with $\mathbf{A} = \boldsymbol{\Sigma}_{k-1}^{-1} + \frac{1}{\alpha} \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u} \mathbf{u}^t \boldsymbol{\Sigma}_{k-1}^{-1}$ and $\mathbf{v} = - \frac{1}{\alpha} \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u}$, we can calculate
+        with $\mathbf{A} = (\boldsymbol{\Sigma}^{(k-1)})^{-1} + \frac{1}{\alpha} (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u} \mathbf{u}^t (\boldsymbol{\Sigma}^{(k-1)})^{-1}$ and $\mathbf{v} = - \frac{1}{\alpha} (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u}$, we can calculate
         \begin{align*}
             \mathbf{A} - \alpha \mathbf{v} \mathbf{v}^t
-            &= \boldsymbol{\Sigma}_{k-1}^{-1} + \frac{1}{\alpha} \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u} \mathbf{u}^t \boldsymbol{\Sigma}_{k-1}^{-1} - \alpha (- \frac{1}{\alpha} \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u}) (- \frac{1}{\alpha} \mathbf{u}^t \boldsymbol{\Sigma}_{k-1}^{-1})) \\
-            &= \boldsymbol{\Sigma}_{k-1}^{-1}
+            &= (\boldsymbol{\Sigma}^{(k-1)})^{-1} + \frac{1}{\alpha} (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u} \mathbf{u}^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} - \alpha (- \frac{1}{\alpha} (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u}) (- \frac{1}{\alpha} \mathbf{u}^t (\boldsymbol{\Sigma}^{(k-1)})^{-1})) \\
+            &= (\boldsymbol{\Sigma}^{(k-1)})^{-1}
         \end{align*}
 
         \begin{equation}
-            \fbox{$\boldsymbol{\Sigma}_{k-1}^{-1} = \mathbf{A} - \alpha \mathbf{v} \mathbf{v}^t$}
+            \fbox{$(\boldsymbol{\Sigma}^{(k-1)})^{-1} = \mathbf{A} - \alpha \mathbf{v} \mathbf{v}^t$}
         \end{equation}
 
-        A formula can also be deduced for the quadratical term of the decision function. If we note $\mathbf{x}_{k}^t = \left[\begin{array}{cc} \mathbf{x}_{k-1}^t   & x_k \end{array}\right]$,
+        A formula can also be deduced for the quadratical term of the decision function. If we note $(\mathbf{x}^{(k)})^t = \left[\begin{array}{cc} (\mathbf{x}^{(k-1)})^t   & x^(k) \end{array}\right]$,
         \begin{align*}
-            \mathbf{x}_{k}^t \boldsymbol{\Sigma}_{k}^{-1} \mathbf{x}_{k}
-            &= \left[\begin{array}{cc} \mathbf{x}_{k-1}^t   & x_k \end{array}\right]
+            (\mathbf{x}^{(k)})^t (\boldsymbol{\Sigma}^{(k)})^{-1} \mathbf{x}^{(k)}
+            &= \left[\begin{array}{cc} (\mathbf{x}^{(k-1)})^t   & x_k \end{array}\right]
             \left[\begin{array}{cc}
             \mathbf{A}   & \mathbf{v} \\
             \mathbf{v}^t & \frac{1}{\alpha}
             \end{array}\right]
             \left[\begin{array}{c} \mathbf{v} \\ x_k \end{array}\right] \\
-            &= \left[\begin{array}{cc} \mathbf{x}_{k-1}^t \mathbf{A} + x_k \mathbf{v}^t & \mathbf{x}_{k-1}^t \mathbf{v} + \frac{x_k}{\alpha} \end{array}\right]
+            &= \left[\begin{array}{cc} (\mathbf{x}^{(k-1)})^t \mathbf{A} + x_k \mathbf{v}^t & (\mathbf{x}^{(k-1)})^t \mathbf{v} + \frac{x_k}{\alpha} \end{array}\right]
             \left[\begin{array}{c} \mathbf{v} \\ x_k \end{array}\right] \\
-            &= \mathbf{x}_{k-1}^t \mathbf{A} \mathbf{x}_{k-1} + x_k \mathbf{v}^t \mathbf{x}_{k-1} + \mathbf{x}_{k-1}^t \mathbf{v} x_k + \frac{x_k^2}{\alpha} \\
-            &= \mathbf{x}_{k-1}^t (\boldsymbol{\Sigma}_{k-1}^{-1} + \frac{1}{\alpha} \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{u} \mathbf{u}^t \boldsymbol{\Sigma}_{k-1}^{-1}) \mathbf{x}_{k-1}
-               + 2 x_k \mathbf{v}^t \mathbf{x}_{k-1} + \frac{x_k^2}{\alpha} \\
-            &= \mathbf{x}_{k-1}^t (\boldsymbol{\Sigma}_{k-1}^{-1} + \alpha \mathbf{v} \mathbf{v}^t) \mathbf{x}_{k-1}
-               + 2 x_k \mathbf{v}^t \mathbf{x}_{k-1} + \frac{x_k^2}{\alpha} \\
-            &= \mathbf{x}_{k-1}^t \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{x}_{k-1} + \alpha ( \mathbf{x}_{k-1}^t \mathbf{v} \mathbf{v}^t \mathbf{x}_{k-1}
-               + 2 \frac{x_k}{\alpha} \mathbf{v}^t \mathbf{x}_{k-1} + \frac{x_k^2}{\alpha^2}) \\
-            &= \mathbf{x}_{k-1}^t \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{x}_{k-1} + \alpha ( \mathbf{x}_{k-1}^t \mathbf{v} + \frac{x_k}{\alpha} )^2 \\
-            &= \mathbf{x}_{k-1}^t \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{x}_{k-1} + \alpha ( \left[\begin{array}{cc} \mathbf{v}^t & \frac{1}{\alpha} \end{array}\right] \mathbf{x}_k )^2
+            &= (\mathbf{x}^{(k-1)})^t \mathbf{A} \mathbf{x}^{(k-1)} + x_k \mathbf{v}^t \mathbf{x}^{(k-1)} + (\mathbf{x}^{(k-1)})^t \mathbf{v} x_k + \frac{(x_k)^2}{\alpha} \\
+            &= (\mathbf{x}^{(k-1)})^t ((\boldsymbol{\Sigma}^{(k-1)})^{-1} + \frac{1}{\alpha} (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{u} \mathbf{u}^t (\boldsymbol{\Sigma}^{(k-1)})^{-1}) \mathbf{x}^{(k-1)}
+               + 2 x_k \mathbf{v}^t \mathbf{x}^{(k-1)} + \frac{(x_k)^2}{\alpha} \\
+            &= (\mathbf{x}^{(k-1)})^t ((\boldsymbol{\Sigma}^{(k-1)})^{-1} + \alpha \mathbf{v} \mathbf{v}^t) \mathbf{x}^{(k-1)}
+               + 2 x_k \mathbf{v}^t \mathbf{x}^{(k-1)} + \frac{(x_k)^2}{\alpha} \\
+            &= (\mathbf{x}^{(k-1)})^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{x}^{(k-1)} + \alpha ( (\mathbf{x}^{(k-1)})^t \mathbf{v} \mathbf{v}^t \mathbf{x}^{(k-1)}
+               + 2 \frac{x_k}{\alpha} \mathbf{v}^t \mathbf{x}^{(k-1)} + \frac{(x_k)^2}{\alpha^2}) \\
+            &= (\mathbf{x}^{(k-1)})^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{x}^{(k-1)} + \alpha ( (\mathbf{x}^{(k-1)})^t \mathbf{v} + \frac{x_k}{\alpha} )^2 \\
+            &= (\mathbf{x}^{(k-1)})^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{x}^{(k-1)} + \alpha ( \left[\begin{array}{cc} \mathbf{v}^t & \frac{1}{\alpha} \end{array}\right] \mathbf{x}^{(k)} )^2
         \end{align*}
 
         \begin{equation}
-            \fbox{$\mathbf{x}_{k}^t \boldsymbol{\Sigma}_{k}^{-1} \mathbf{x}_{k} = \mathbf{x}_{k-1}^t \boldsymbol{\Sigma}_{k-1}^{-1} \mathbf{x}_{k-1} + \alpha ( \left[\begin{array}{cc} \mathbf{v}^t & \frac{1}{\alpha} \end{array}\right] \mathbf{x}_k )^2$}
+            \fbox{$(\mathbf{x}^{(k)})^t (\boldsymbol{\Sigma}^{(k)})^{-1} \mathbf{x}^{(k)} = (\mathbf{x}^{(k-1)})^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} \mathbf{x}^{(k-1)} + \alpha ( \left[\begin{array}{cc} \mathbf{v}^t & \frac{1}{\alpha} \end{array}\right] \mathbf{x}^{(k)} )^2$}
         \end{equation}
 
         Finally, using the formula of the determinant of a block matrix and after taking the log, we obtain
         \begin{equation}
-            \fbox{$\log \left(|\boldsymbol{\Sigma}_k|\right) = \log \left(|\boldsymbol{\Sigma}_{k-1}|\right) + \log \alpha$}
+            \fbox{$\log \left(|\boldsymbol{\Sigma}^{(k)}|\right) = \log \left(|\boldsymbol{\Sigma}^{(k-1)}|\right) + \log \alpha$}
         \end{equation}
 
         To give an example, if a measure of good classification is used, we need to compute the decision rule and with the update rules, it can be rewritten as follow
         \begin{align*}
-            Q(\mathbf{x}) = &- (\mathbf{x}_{k-1} - \boldsymbol{\mu}_{k-1})^t \boldsymbol{\Sigma}_{k-1}^{-1} (\mathbf{x}_{k-1} - \boldsymbol{\mu}_{k-1}) \\
-            &+ \alpha ( \left[\begin{array}{cc} \mathbf{v}^t & \frac{1}{\alpha} \end{array}\right] (\mathbf{x}_k - \boldsymbol{\mu}_k) )^2 \\
-            &- \log \left(|\boldsymbol{\Sigma}_{k-1}|\right) + \log \alpha  + 2 \log (\pi)
+            Q(\mathbf{x}) = &- (\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)})^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} (\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)}) \\
+            &+ \alpha ( \left[\begin{array}{cc} \mathbf{v}^t & \frac{1}{\alpha} \end{array}\right] (\mathbf{x}^(k) - \boldsymbol{\mu}^{(k)}) )^2 \\
+            &- \log \left(|\boldsymbol{\Sigma}^{(k-1)}|\right) + \log \alpha  + 2 \log (\pi)
         \end{align*}
         It can be noticed that this new formula allow us to precompute the computationally heavy terms because they are the same for all possible augmented sets at a given iteration of the selection.The Figure \ref{fig:opt_computation} illustrates the optimization of the selection algorithm.
 
         \begin{figure}[!ht]
             \centering
             \setlength{\tabcolsep}{2pt}
-            \includegraphics[width=0.9\textwidth]{Fig/algo_iteration.png}
+            \includegraphics[width=0.8\textwidth]{Fig/algo_iteration.png}
             \caption{Iteration of sequential forward features selection.\label{fig:opt_computation}}
         \end{figure}
 
@@ -345,35 +408,35 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
         This decomposition has several advantages. First, it is very simple to compute the determinant once the eigenvalues are available because the determinant is equal to the product of these values. Secondly, it is possible to check the eigenvalues and so to assure a better computational stability. Due to the curse of dimensionality, the covariance matrix is sometimes ill-estimated and the results is that some eigenvalues are really small (below computational precision) and the decomposition helps us to check their actual values and if they are below EPS\_FLT which the machine maximum precision for a float, we set these eigenvalues to EPS\_FLT.
 
-    \section{Test with real data}
+    % \section{Test with real data}
 
-    \section{Implementation of the Orfeo Toolbox module}
+    % \section{Implementation of the Orfeo Toolbox module}
 
-    After the calibration of the algorithm with a Python implementation, we aim to realise a C++ implementation of this selection method. And, to make it easily available, we choose to develop a remote module for the Orfeo Toolbox (OTB) designed by the CNES. The current section describes all the choice made during the C++ implementation.
+    % After the calibration of the algorithm with a Python implementation, we aim to realise a C++ implementation of this selection method. And, to make it easily available, we choose to develop a remote module for the Orfeo Toolbox (OTB) designed by the CNES. The current section describes all the choice made during the C++ implementation.
 
-        \subsection{Integration in Orfeo Toolbox}
+    %     \subsection{Integration in Orfeo Toolbox}
 
-        The module developed is available on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}} and is actually a fork of the template for remote module furnished by OTB developers.
+    %     The module developed is available on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}} and is actually a fork of the template for remote module furnished by OTB developers.
 
-        We choose to implement our own version of a GMM classifier in a class named \emph{GMMMachineLearningModel} in order to assure better performance in term of computational time. The second step is to implement a subclass of the GMM classifier including the features selection method.
+    %     We choose to implement our own version of a GMM classifier in a class named \emph{GMMMachineLearningModel} in order to assure better performance in term of computational time. The second step is to implement a subclass of the GMM classifier including the features selection method.
 
-        \subsection{GMM classifier}
+    %     \subsection{GMM classifier}
 
-        The \emph{GMMMachineLearningModel} class inherits from the OTB class \emph{MachineLearningModel}. It implements the virtual method \emph{Train()} and \emph{Predict()} inherited from the super class and on additional method \emph{Decomposition()} used to decompose a symmetric matrix in eigenvalues and eigenvectors.
+    %     The \emph{GMMMachineLearningModel} class inherits from the OTB class \emph{MachineLearningModel}. It implements the virtual method \emph{Train()} and \emph{Predict()} inherited from the super class and on additional method \emph{Decomposition()} used to decompose a symmetric matrix in eigenvalues and eigenvectors.
 
-        In this class, all measurement vectors are of type \emph{itk::VariableLengthVector} and all other vectors are of type \emph{std::vector}. The various matrix are of type \emph{itk::VariableSizeMatrix}.
+    %     In this class, all measurement vectors are of type \emph{itk::VariableLengthVector} and all other vectors are of type \emph{std::vector}. The various matrix are of type \emph{itk::VariableSizeMatrix}.
 
-        The super class of GMMMachineLearningModel enables the management of a list of samples used for training. This class includes 6 members describing the model and computed in the \emph{Train()} function : the number of class, the number of features, a vector containing the proportion of each class in the training set, a vector containing the number of samples in each class, a vector containing the mean vector of each class and finally a vector containing the covariance matrix of each class.
+    %     The super class of GMMMachineLearningModel enables the management of a list of samples used for training. This class includes 6 members describing the model and computed in the \emph{Train()} function : the number of class, the number of features, a vector containing the proportion of each class in the training set, a vector containing the number of samples in each class, a vector containing the mean vector of each class and finally a vector containing the covariance matrix of each class.
 
-        Moreover, the decision function used for prediction is rewritted in order to assure faster computation. We use the following equivalent of Equation \ref{eq:decision}
-        \begin{equation}
-            Qc(\mathbf{x}) = -  || \boldsymbol{\Lambda}_c^{-\frac{1}{2}} \boldsymbol{Q}_c^t (\mathbf{x} - \boldsymbol{\mu}_c) ||^2 - \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)
-        \end{equation}
-        where $\boldsymbol{\Lambda}_c$ and $\boldsymbol{Q}_c$ are obtained in decomposing $\boldsymbol{\Sigma}_c$ in eigenvalues and eigenvectors s.t. $\boldsymbol{\Sigma}_c = \boldsymbol{Q}_c \boldsymbol{\Lambda}_c \boldsymbol{Q}_c^t$. Thus, we can precompute several terms of the decision function in the \emph{Train()} function. Eigenvalues, eigenvectors, the terms $\boldsymbol{\Lambda}_c^{-\frac{1}{2}} \boldsymbol{Q}_c^t$ and the terms $- \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)$ are stored in vectors as class members.
+    %     Moreover, the decision function used for prediction is rewritted in order to assure faster computation. We use the following equivalent of Equation \ref{eq:decision}
+    %     \begin{equation}
+    %         Qc(\mathbf{x}) = -  || \boldsymbol{\Lambda}_c^{-\frac{1}{2}} \boldsymbol{Q}_c^t (\mathbf{x} - \boldsymbol{\mu}_c) ||^2 - \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)
+    %     \end{equation}
+    %     where $\boldsymbol{\Lambda}_c$ and $\boldsymbol{Q}_c$ are obtained in decomposing $\boldsymbol{\Sigma}_c$ in eigenvalues and eigenvectors s.t. $\boldsymbol{\Sigma}_c = \boldsymbol{Q}_c \boldsymbol{\Lambda}_c \boldsymbol{Q}_c^t$. Thus, we can precompute several terms of the decision function in the \emph{Train()} function. Eigenvalues, eigenvectors, the terms $\boldsymbol{\Lambda}_c^{-\frac{1}{2}} \boldsymbol{Q}_c^t$ and the terms $- \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)$ are stored in vectors as class members.
 
-        The decompositions in eigenvalues and eigenvectors of the covariance matrices are performed with the \emph{Decomposition()} function which is a wrapper to instance the class \emph{itk::symmetricEigenAnalysis} and call its method \emph{ComputeEigenValuesAndVectors} (this method uses netlib routines). Immediately after decomposition, eigenvalues are examined and all eigenvalues inferior to EPSILON\_FLT (or EPSILON\_DBL) are reset to this value. The idea is to limit computational error when parameters are ill-estimated due to an insufficient amount of training samples.
+    %     The decompositions in eigenvalues and eigenvectors of the covariance matrices are performed with the \emph{Decomposition()} function which is a wrapper to instance the class \emph{itk::symmetricEigenAnalysis} and call its method \emph{ComputeEigenValuesAndVectors} (this method uses netlib routines). Immediately after decomposition, eigenvalues are examined and all eigenvalues inferior to EPSILON\_FLT (or EPSILON\_DBL) are reset to this value. The idea is to limit computational error when parameters are ill-estimated due to an insufficient amount of training samples.
 
-        The Ridge regularization described in Section \ref{sec:regularization} is also implemented in this class. If the value of $\tau$ is set before training, the regularization is performed during the precomputation of the terms of the decision function and if $\tau$ is modified after training, the function \emph{SetTau()} updates the precomputation in addition to changing the value of $\tau$.
+    %     The Ridge regularization described in Section \ref{sec:regularization} is also implemented in this class. If the value of $\tau$ is set before training, the regularization is performed during the precomputation of the terms of the decision function and if $\tau$ is modified after training, the function \emph{SetTau()} updates the precomputation in addition to changing the value of $\tau$.
 
 
 
@@ -385,6 +448,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
 
 \newpage
+
 \appendix
 \section{Update for cross validation (calculation)}
 \label{app:cv_maj}
