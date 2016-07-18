@@ -448,51 +448,51 @@ Two selection algorithms are presented the sequential forward features selection
 
         This decomposition has several advantages. First, it is very simple to compute the determinant once the eigenvalues are available because the determinant is equal to the product of these values. Secondly, it is possible to check the eigenvalues and so to assure a better computational stability. Due to the curse of dimensionality, the covariance matrix is sometimes ill-estimated and the results is that some eigenvalues are really small (below computational precision) and the decomposition helps us to check their actual values and if they are below EPS\_FLT which the machine maximum precision for a float, we set these eigenvalues to EPS\_FLT.
 
-% \section{Organization}
-% \label{sec:orga}
+\section{Organization}
+\label{sec:orga}
 
-%     \subsection{Objectives}
+    \subsection{Objectives}
 
-%     Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of my tutor M.Fauvel, we want to {\bfseries reproduce the SFS selection method and develop an upgrade version} corresponding to the floating forward selection described in the previous section. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
+    Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of my tutor M.Fauvel, we want to {\bfseries reproduce the SFS selection method and develop an upgrade version} corresponding to the floating forward selection described in the previous section. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
 
-%     Then, the aim is collaborate with CNES in order to {\bfseries produce an external module which could be plugged in the open-source library Orfeo Toolbox (OTB) developed by CNES} (\cite{christophe2008orfeo}). This module implements the same methods as the Python version but has to be written in C++ and be compatible with the OTB. The module obtained is a fork of a template furnished by OTB developers and is also available freely on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}}.
+    Then, the aim is collaborate with CNES in order to {\bfseries produce an external module which could be plugged in the open-source library Orfeo Toolbox (OTB) developed by CNES} (\cite{christophe2008orfeo}). This module implements the same methods as the Python version but has to be written in C++ and be compatible with the OTB. The module obtained is a fork of a template furnished by OTB developers and is also available freely on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}}.
 
-%     Finally, we want to {\bfseries test the efficiency of this selection method and compare it to a kernel-based method} (\cite{camps2010remote}). The testing is conducted first on hyperspectral images where features are directly the spectral band and secondly on remote sensing images where numerous and various features are used (texture features, HoG, morphological profiles, radiometric indexes, ...).
+    Finally, we want to {\bfseries test the efficiency of this selection method and compare it to a kernel-based method} (\cite{camps2010remote}). The testing is conducted first on hyperspectral images where features are directly the spectral band and secondly on remote sensing images where numerous and various features are used (texture features, HoG, morphological profiles, radiometric indexes, ...).
 
-%     \subsection{Planning}
+    \subsection{Planning}
 
-%     As can be expected, the cycle is conducted from high-level to low-level which means that the Python code is first developed and so allow us to set definitively the structure of the algorithm. The low-level C++ code is then developed in order to assure good performances and to respect the interface with the OTB.
+    As can be expected, the cycle is conducted from high-level to low-level which means that the Python code is first developed and so allow us to set definitively the structure of the algorithm. The low-level C++ code is then developed in order to assure good performances and to respect the interface with the OTB.
 
-%     Each implementation is followed by a testing period during which the code is tested with artificial and easily manipulable data. Moreover, the development of the C++ code is done in interaction with developers of the OTB and, in particular, a first meeting is organized at the early stage of the development to assure that the best choice are made and a second meeting is set during the validation of the C++ code to get feedbacks.
+    Each implementation is followed by a testing period during which the code is tested with artificial and easily manipulable data. Moreover, the development of the C++ code is done in interaction with developers of the OTB and, in particular, a first meeting is organized at the early stage of the development to assure that the best choice are made and a second meeting is set during the validation of the C++ code to get feedbacks.
 
-%     The experimentation are conducted at the end to demonstrate the interest of the project. The Gantt diagram \ref{gantt} summarized the expected organization of the project.
+    The experimentation are conducted at the end to demonstrate the interest of the project. The Gantt diagram \ref{gantt} summarized the expected organization of the project.
 
-%     \begin{figure}[ht]
-%         \centering
-%         \resizebox{\linewidth}{!}{
-%             \begin{ganttchart}[hgrid,
-%                 vgrid,
-%                 bar/.append style={fill=blue!30},
-%                 group/.append style={draw=black,fill=red!50},
-%                 title/.append style={fill=gray!20}]{1}{48}
-%                 \gantttitle{\bfseries April}{8}\gantttitle{\bfseries May}{8}\gantttitle{\bfseries June}{8}\gantttitle{\bfseries July}{8}\gantttitle{\bfseries August}{8}\gantttitle{\bfseries September}{8} \\
-%                 \ganttgroup{Development}{1}{26}\\
-%                 \ganttbar{\em Python Implementation}{1}{8} \\
-%                 \ganttbar{\em C++ Implementation}{9}{26} \\
-%                 \ganttmilestone{\em Orfeo Toolbox Users Days (CNES)}{11}\\
-%                 \ganttgroup{Testing}{7}{34}\\
-%                 \ganttbar{\em Validation Python code}{7}{18}\\
-%                 \ganttbar{\em Validation C++ code}{25}{34}\\
-%                 \ganttmilestone{\em Meeting CNES}{31}\\
-%                 \ganttgroup{Experimentation on real data}{20}{48}\\
-%                 \ganttbar{\em Experimentation on hyperspectral images}{20}{48}\\
-%                 \ganttbar{\em Experimentation with heterogeneous features}{32}{48}\\
-%                 \ganttmilestone{\em Mid-term report}{24}\\
-%                 \ganttmilestone{\em Final report}{47}
-%             \end{ganttchart}}
-%         \caption{Gantt diagram of the internship.}
-%         \label{gantt}
-%     \end{figure}
+    \begin{figure}[ht]
+        \centering
+        \resizebox{\linewidth}{!}{
+            \begin{ganttchart}[hgrid,
+                vgrid,
+                bar/.append style={fill=blue!30},
+                group/.append style={draw=black,fill=red!50},
+                title/.append style={fill=gray!20}]{1}{48}
+                \gantttitle{\bfseries April}{8}\gantttitle{\bfseries May}{8}\gantttitle{\bfseries June}{8}\gantttitle{\bfseries July}{8}\gantttitle{\bfseries August}{8}\gantttitle{\bfseries September}{8} \\
+                \ganttgroup{Development}{1}{26}\\
+                \ganttbar{\em Python Implementation}{1}{8} \\
+                \ganttbar{\em C++ Implementation}{9}{26} \\
+                \ganttmilestone{\em Orfeo Toolbox Users Days (CNES)}{11}\\
+                \ganttgroup{Testing}{7}{34}\\
+                \ganttbar{\em Validation Python code}{7}{18}\\
+                \ganttbar{\em Validation C++ code}{25}{34}\\
+                \ganttmilestone{\em Meeting CNES}{31}\\
+                \ganttgroup{Experimentation on real data}{20}{48}\\
+                \ganttbar{\em Experimentation on hyperspectral images}{20}{48}\\
+                \ganttbar{\em Experimentation with heterogeneous features}{32}{48}\\
+                \ganttmilestone{\em Mid-term report}{24}\\
+                \ganttmilestone{\em Final report}{47}
+            \end{ganttchart}}
+        \caption{Gantt diagram of the internship.}
+        \label{gantt}
+    \end{figure}
 
 
 
@@ -539,7 +539,7 @@ Two selection algorithms are presented the sequential forward features selection
             \begin{tabular}{c}
                 \includegraphics[width=0.5\textwidth]{Fig/aisa.png}\\
             \end{tabular}
-            \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion: {\bfseries (a)} with 50, 100, 200 samples by class in training set and {\bfseries (b)} with 0.5\%, 1\%, 2.5\% of dataset in training set keeping proportion.\label{fig:res-1}}
+            \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion: {\bfseries (a)} with 50, 100, 200 samples by class in training set and {\bfseries (b)} with 0.5\%, 1\%, 2.5\% of dataset in training set keeping proportion.\label{fig:setsize}}
         \end{figure}
 
         % discuss sfs vs sffs
@@ -556,14 +556,34 @@ Two selection algorithms are presented the sequential forward features selection
         \end{figure}
 
         % discuss criterion advantages
-        Now, 
+        Now, if we take a closer to the influence of criterion function, we can see from Figure \ref{fig:res-crit} the results of classification applied to the validation set for each of criterion presented in Section \ref{sec:criterion}. What we expected was that the criterion based on good classification mesure would be better because it would optimize directly the classification rate and maybe more flexible regarding to the Gaussian assumption. But it appears that for this given dataset, as good results are obtained with Jeffries-Matusita distance.
 
+        \begin{figure}[!ht]
+            \centering
+            \begin{tabular}{cc}
+                \includegraphics[width=0.5\textwidth]{Fig/aisa.png} &
+                \includegraphics[width=0.5\textwidth]{Fig/aisa_gt.png} \\
+                {\bfseries{(a)}} & {\bfseries{(b)}} \\
+            \end{tabular}
+            \caption{Classification results with different criterion function with 20 trials : {\bfseries (a)} with a training composed of 100 samples for each class and {\bfseries (b)} with a training set keeping class proportions composed of 1\% of the dataset (=xxxx samples).\label{fig:res-crit}}
+        \end{figure}
 
         % discuss time processing
+        Finally, if we compare the various method and criterion function in term of computational time, we first notice that the SFFS method takes more time than the forward method which is actually a fact supported by the theoretical ground. It can also be noticed than the processing time for selection do not increase with the number of samples in training set for metrics based on distance between distribution (Kullback–Leibler divergence, Jeffries-Matusita distance) whereas, in the case of good classification criteria, the processing time rapidly increases. All processing time are presented in Figure \ref{fig:proc-time}.
 
-
-
-
+        \begin{figure}[!ht]
+            \centering
+            \begin{tabular}{ccc}
+                \includegraphics[width=0.33\textwidth]{Fig/aisa.png} &
+                \includegraphics[width=0.33\textwidth]{Fig/aisa.png} &
+                \includegraphics[width=0.33\textwidth]{Fig/aisa_gt.png} \\
+                {\bfseries{(a)}} & {\bfseries{(b)}} & {\bfseries{(c)}} \\
+                \includegraphics[width=0.33\textwidth]{Fig/aisa.png} &
+                \includegraphics[width=0.33\textwidth]{Fig/aisa_gt.png} & \\
+                {\bfseries{(d)}} & {\bfseries{(e)}} &  \\
+            \end{tabular}
+            \caption{Processing time for selection with 20 trials : {\bfseries (a)} using KL divergence, {\bfseries (b)} JM distance, {\bfseries (c)} overall accuracy, {\bfseries (d)} Cohen's kappa, {\bfseries (e)} mean of F1-scores.\label{fig:proc-time}}
+        \end{figure}
 
 
 
