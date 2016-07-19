@@ -501,8 +501,7 @@ Two selection algorithms are presented the sequential forward features selection
     In this section, we discuss the results of the features selection method. The forward selection and the floating forward selection are compared and the results with the different criterion function are also discussed. All the experimentation has been conducted with a single dataset presented in the next subsection.
 
         \subsection{Aisa dataset}
-
-        The Aisa dataset is composed of an hyperspectral image with 256 spectral band between 42 nm and 42 nm and a shapefile containing groundtruth. The groundtruth is made with 16 classes representing landcover of the area. A representation of the dataset is displayed in Figure \ref{fig:aisa}.
+        The dataset has been acquired by the AISA Eagle sensor during a flight campaign over Heves, Hungary. It contains 252 bands ranging from 395 to 975 nm. 16 classes have been defined for a total of 361,971 referenced pixels. Figure \ref{fig:aisa} shows one channel of the multispectral image and the shapefile representing groundtruth and Table \ref{tab:aisa} presents the repartition of the various classes.
 
         \begin{figure}[!ht]
             \centering
@@ -511,7 +510,31 @@ Two selection algorithms are presented the sequential forward features selection
                 \includegraphics[width=0.5\textwidth]{Fig/aisa_gt.png} \\
                 {\bfseries{(a)}} & {\bfseries{(b)}} \\
             \end{tabular}
-            \caption{Aisa dataset : {\bfseries (a)} color composition and {\bfseries (b)} groundtruth.\label{fig:aisa}}
+            \caption{Aisa dataset: {\bfseries{(a)}} a single band of the image, {\bfseries{(b)}} groundtruth.\label{fig:aisa}}
+        \end{figure}
+
+        \begin{figure}[!ht]
+            \centering
+            \begin{tabular}[b]{cc}\hline
+              Class & Number of samples \\ \hline
+              1 & 136,524 \\
+              2 & 61,517 \\
+              3 & 30,197 \\
+              4 & 17,626 \\
+              5 & 18,278 \\
+              6 & 7,199 \\
+              7 & 10,746 \\
+              8 & 23,283 \\
+              9 & 2,799 \\
+              10 & 4,222 \\
+              11 & 4,773 \\
+              12 & 26,566 \\
+              13 & 9,272 \\
+              14 & 3,426 \\
+              15 & 2,107 \\
+              16 & 3,436 \\ \hline
+            \end{tabular}
+            \caption{table}{Repartition of classes in Aisa dataset.\label{tab:aisa}}
         \end{figure}
 
         \subsection{Experimental results}
@@ -524,10 +547,8 @@ Two selection algorithms are presented the sequential forward features selection
 
         \begin{figure}[!ht]
             \centering
-            \begin{tabular}{c}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa.png}\\
-            \end{tabular}
-            \caption{Classification results (overall accuracy, Cohen's kappa and mean of F1-score) averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion.\label{fig:res-1}}
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_JM_fctvarnb.pdf}
+            \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion with 100 samples by class in training set.\label{fig:res-1}}
         \end{figure}
 
 
@@ -536,8 +557,10 @@ Two selection algorithms are presented the sequential forward features selection
 
         \begin{figure}[!ht]
             \centering
-            \begin{tabular}{c}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa.png}\\
+            \begin{tabular}{cc}
+                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_setsize_1.pdf} &
+                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_setsize_2.pdf}\\
+                {\bfseries{(a)}} & {\bfseries{(b)}} \\
             \end{tabular}
             \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion: {\bfseries (a)} with 50, 100, 200 samples by class in training set and {\bfseries (b)} with 0.5\%, 1\%, 2.5\% of dataset in training set keeping proportion.\label{fig:setsize}}
         \end{figure}
@@ -548,8 +571,8 @@ Two selection algorithms are presented the sequential forward features selection
         \begin{figure}[!ht]
             \centering
             \begin{tabular}{cc}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa.png} &
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_gt.png} \\
+                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_fctmethod_1.pdf} &
+                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_fctmethod_2.pdf} \\
                 {\bfseries{(a)}} & {\bfseries{(b)}} \\
             \end{tabular}
             \caption{Classification results with 20 trials : {\bfseries (a)} using Jeffries-Matusita distance as criterion and {\bfseries (b)} using Cohen's kappa as criterion.\label{fig:sfs-vs-sffs}}
@@ -561,8 +584,8 @@ Two selection algorithms are presented the sequential forward features selection
         \begin{figure}[!ht]
             \centering
             \begin{tabular}{cc}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa.png} &
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_gt.png} \\
+                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_allcrit_1.pdf} &
+                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_allcrit_2.pdf} \\
                 {\bfseries{(a)}} & {\bfseries{(b)}} \\
             \end{tabular}
             \caption{Classification results with different criterion function with 20 trials : {\bfseries (a)} with a training composed of 100 samples for each class and {\bfseries (b)} with a training set keeping class proportions composed of 1\% of the dataset (=xxxx samples).\label{fig:res-crit}}
@@ -574,15 +597,15 @@ Two selection algorithms are presented the sequential forward features selection
         \begin{figure}[!ht]
             \centering
             \begin{tabular}{ccc}
-                \includegraphics[width=0.33\textwidth]{Fig/aisa.png} &
-                \includegraphics[width=0.33\textwidth]{Fig/aisa.png} &
-                \includegraphics[width=0.33\textwidth]{Fig/aisa_gt.png} \\
+                \includegraphics[width=0.33\textwidth]{Fig/time_aisa_trials_20_kappa.pdf} &
+                \includegraphics[width=0.33\textwidth]{Fig/time_aisa_trials_20_accuracy.pdf} &
+                \includegraphics[width=0.33\textwidth]{Fig/time_aisa_trials_20_F1Mean.pdf} \\
                 {\bfseries{(a)}} & {\bfseries{(b)}} & {\bfseries{(c)}} \\
-                \includegraphics[width=0.33\textwidth]{Fig/aisa.png} &
-                \includegraphics[width=0.33\textwidth]{Fig/aisa_gt.png} & \\
+                \includegraphics[width=0.33\textwidth]{Fig/time_aisa_trials_20_divKL.pdf} &
+                \includegraphics[width=0.33\textwidth]{Fig/time_aisa_trials_20_JM.pdf} & \\
                 {\bfseries{(d)}} & {\bfseries{(e)}} &  \\
             \end{tabular}
-            \caption{Processing time for selection with 20 trials : {\bfseries (a)} using KL divergence, {\bfseries (b)} JM distance, {\bfseries (c)} overall accuracy, {\bfseries (d)} Cohen's kappa, {\bfseries (e)} mean of F1-scores.\label{fig:proc-time}}
+            \caption{Processing time for selection with 20 trials : {\bfseries (a)} using Cohen's kappa, {\bfseries (b)} using overall accuracy, {\bfseries (c)} using mean of F1-scores, {\bfseries (d)} using KL divergence, {\bfseries (e)} using JM distance.\label{fig:proc-time}}
         \end{figure}
 
 
