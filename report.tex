@@ -55,6 +55,7 @@ There is a large diversity of method for feature selection. However, they usuall
 The objectives of the internship is to develop and implement a feature selection method based on GMM. The remaining of this mid-term report is organized as follows.
 
 \section{Non linear parsimonious features selection}
+\label{sec:theory}
 
 In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_i,y_i\}_{i=1}^{n}$ is the training set where $\mathbf{x}_i \in \mathbb{R}^d$ is the vector of features of the $i^{th}$ sample, $y_i = 1,...,C$ the associated label, C the number of labels, $n$ the number of samples and $n_c$ the number of samples of class $c$.
 
@@ -611,33 +612,60 @@ Two selection algorithms are presented the sequential forward features selection
 
 
 
-    % \section{Implementation of the Orfeo Toolbox module}
+    \section{Implementation of the Orfeo Toolbox module}
 
-    % After the calibration of the algorithm with a Python implementation, we aim to realise a C++ implementation of this selection method. And, to make it easily available, we choose to develop a remote module for the Orfeo Toolbox (OTB) designed by the CNES. The current section describes all the choice made during the C++ implementation.
+    After the calibration of the algorithm with a Python implementation, we aim to realise a C++ implementation of this selection method. And, to make it easily available, we choose to develop a remote module for the Orfeo Toolbox (OTB) designed by the CNES. The current section describes this C++ implementation.
 
-    %     \subsection{Integration in Orfeo Toolbox}
+        \subsection{Integration in Orfeo Toolbox}
 
-    %     The module developed is available on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}} and is actually a fork of the template for remote module furnished by OTB developers.
+        The module developed is available on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}} and is actually a fork of the template for remote module furnished by OTB developers.
 
-    %     We choose to implement our own version of a GMM classifier in a class named \emph{GMMMachineLearningModel} in order to assure better performance in term of computational time. The second step is to implement a subclass of the GMM classifier including the features selection method.
+        \subsection{Code structure}
 
-    %     \subsection{GMM classifier}
+        \begin{figure}[!ht]
+            \centering
+            \includegraphics[width=0.8\textwidth]{Fig/umldiag.png}
+            \caption{UML digram of the developped OTB remote module.\label{fig:uml}}
+        \end{figure}
 
-    %     The \emph{GMMMachineLearningModel} class inherits from the OTB class \emph{MachineLearningModel}. It implements the virtual method \emph{Train()} and \emph{Predict()} inherited from the super class and on additional method \emph{Decomposition()} used to decompose a symmetric matrix in eigenvalues and eigenvectors.
+        Even if a GMM classifier inherited from Opencv library is already available in the OTB, we choose to implement our own version of a GMM classifier in a class named \emph{GMMMachineLearningModel} in order to assure better performance in term of computational time. The second step is to implement a subclass of the GMM classifier including the features selection method.
 
-    %     In this class, all measurement vectors are of type \emph{itk::VariableLengthVector} and all other vectors are of type \emph{std::vector}. The various matrix are of type \emph{itk::VariableSizeMatrix}.
+        The \emph{GMMMachineLearningModel} class inherits from the OTB class \emph{MachineLearningModel} which is a basic class used for all classifier in the OTB. The \emph{MachineLearningModel} class enables the management of a list of samples used for training and also declares the virtual methods inherited: \emph{Train()}, \emph{Predict()}, \emph{Save()}, \emph{Load()}, \emph{CanReadFile()}, \emph{CanWriteFile()}.
 
-    %     The super class of GMMMachineLearningModel enables the management of a list of samples used for training. This class includes 6 members describing the model and computed in the \emph{Train()} function : the number of class, the number of features, a vector containing the proportion of each class in the training set, a vector containing the number of samples in each class, a vector containing the mean vector of each class and finally a vector containing the covariance matrix of each class.
+        The \emph{GMMMachineLearningModel} class implements all these virtual methods. The \emph{Train()} aims to train the classifier using a list of samples set as a member of the class. Then, it is possible to use the method \emph{Predict()} to classify a sample and optional get the confidence in the prediction. The methods \emph{Save()} and \emph{Load()} obviously are used to save and load a trained model. And, finally, \emph{CanReadFile()} and \emph{CanWriteFile()} state the validity of a GMM model file.
 
-    %     Moreover, the decision function used for prediction is rewritted in order to assure faster computation. We use the following equivalent of Equation \ref{eq:decision}
-    %     \begin{equation}
-    %         Qc(\mathbf{x}) = -  || \boldsymbol{\Lambda}_c^{-\frac{1}{2}} \boldsymbol{Q}_c^t (\mathbf{x} - \boldsymbol{\mu}_c) ||^2 - \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)
-    %     \end{equation}
-    %     where $\boldsymbol{\Lambda}_c$ and $\boldsymbol{Q}_c$ are obtained in decomposing $\boldsymbol{\Sigma}_c$ in eigenvalues and eigenvectors s.t. $\boldsymbol{\Sigma}_c = \boldsymbol{Q}_c \boldsymbol{\Lambda}_c \boldsymbol{Q}_c^t$. Thus, we can precompute several terms of the decision function in the \emph{Train()} function. Eigenvalues, eigenvectors, the terms $\boldsymbol{\Lambda}_c^{-\frac{1}{2}} \boldsymbol{Q}_c^t$ and the terms $- \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)$ are stored in vectors as class members.
+        In addition to these inherited methods, two noticeable methods are implemented. The \emph{Decomposition()} method perform a decomposition of a symmetric matrix in eigenvalues and eigenvectors using a function of the VNL library. It is to notice that this method check the value of the extracted eigenvalues and minor them to EPSILON\_FLT (or EPSILON\_DBL) which corresponds to computational precision.  The idea is to limit computational errors when parameters are ill-estimated due to an insufficient amount of training samples. The second interesting method is \emph{TrainTau()} which concerns the Ridge regularization. Given a set of possible regularization constant $\tau$, this method selects the most efficient value in estimating classification rate with cross-validation.
 
-    %     The decompositions in eigenvalues and eigenvectors of the covariance matrices are performed with the \emph{Decomposition()} function which is a wrapper to instance the class \emph{itk::symmetricEigenAnalysis} and call its method \emph{ComputeEigenValuesAndVectors} (this method uses netlib routines). Immediately after decomposition, eigenvalues are examined and all eigenvalues inferior to EPSILON\_FLT (or EPSILON\_DBL) are reset to this value. The idea is to limit computational error when parameters are ill-estimated due to an insufficient amount of training samples.
+        In term of members, the \emph{GMMMachineLearningModel} includes:
+        \begin{itemize}
+            \item 6 variables describing the model: the number of class, the number of features, the proportion of each class in the training set, the number of samples in each class, the mean vectors of each class and finally the covariance matrices of each class;
+            \item 1 optional meta-parameter: the regularization value $\tau$ for Ridge regularization;
+            \item 4 precomputed terms used for prediction: eigenvalues of covariance matrices, eigenvectors of covariance matrices, 2 other terms.
+        \end{itemize}
 
-    %     The Ridge regularization described in Section \ref{sec:regularization} is also implemented in this class. If the value of $\tau$ is set before training, the regularization is performed during the precomputation of the terms of the decision function and if $\tau$ is modified after training, the function \emph{SetTau()} updates the precomputation in addition to changing the value of $\tau$.
+        To implement the selection algorithm, a new class \emph{GMMSelectionMachineLearningModel} inheriting from \emph{GMMMachineLearningModel} is defined. This class keeps the same six methods inherited from \emph{MachineLearningModel} but reimplements \emph{Predict()} to predict with a reduced set of features and  \emph{Save()}/\emph{Load()} to use a second file to handle the results of the selection.
+
+        The other methods available in class \emph{GMMSelectionMachineLearningModel} are used to perform the selection algorithms presented in Section \ref{sec:theory}. The method \emph{Selection()} aims to set the various parameter of the selection and then calls either the \emph{ForwardSelection()} method to use forward feature selection or the \emph{FloatingForwardSelection()} method to use SFFS. Then, 3 different methods are used to evaluate criterion functions during selection. Given a pool of variables available for selection, these functions evaluate the criterion functions for all the possible augmented set. The \emph{ComputeJM()} method is used for Jeffries-Matusita distance, \emph{ComputeDivKL()} for Kullback–Leibler divergence and \emph{ComputeClassifRate()} for the three good classification criteria. It is to notice that the good classification criteria are evaluated using cross-validation.
+
+        Several new members are defined in the \emph{GMMSelectionMachineLearningModel} class:
+        \begin{itemize}
+            \item 2 meta-parameters: one to specify the number of variables to use for prediction and one to enable the process to automatically set the previous meta-parameter to the number maximizing the criterion function;
+            \item 3 variables describing the results of selection: the set to use for prediction, the evolution of criterion function at each iteration and the best sets for each iteration;
+            \item 2 variables used for cross-validation: the set of submodels and the folds of samples;
+            \item 2 precomputed terms used for prediction.
+        \end{itemize}
+
+        All the code structure is summarized in the UML diagram displayed in Figure \ref{fig:uml}.
+
+        \subsection{Applications}
+
+        In order to provide an easy way to use the developed algorithm, we finally develop OTB application. These application allows the user to use and parametrize the algorithm from command line. Three applications are built.
+
+        The application \emph{otbcli\_TrainGMMApp} create and train a model from class \emph{GMMMachineLearningModel} and the application \emph{otbcli\_TrainGMMSelectionApp} same for a model of class \emph{GMMSelectionMachineLearningModel}. These two applications use a raster image and shapefile with groundtruth as input and create a model file.
+
+        The last application \emph{otbcli\_PredictGMMApp} takes a raster image as input and a model file and perform classification of the image. It generates a classification map in an image file and optionally a confidence map. An other application is available in the OTB to compute classification rate from the image and a groundtruth file.
+
+        \subsection{Code profiling}
 
 
 
@@ -645,6 +673,11 @@ Two selection algorithms are presented the sequential forward features selection
 
 
 
+    \section{Experimental results comparison to classical classifiers}
+
+
+
+    \section{Conclusion}
 
 
 
