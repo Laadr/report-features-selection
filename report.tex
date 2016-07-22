@@ -22,6 +22,9 @@
 \usepackage{algorithmic}
 \usepackage{pgfgantt}
 
+\usepackage{./tikzuml-v1.0-2016-03-29/tikz-uml}
+\usetikzlibrary{positioning}
+
 \title{Report : Operational Feature Selection in Gaussian Mixture Models}
 
 
@@ -61,7 +64,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
     \subsection{Gaussian Mixture Models}
 
-    The hypothesis of Gaussian mixture models (GMM) is that the distribution of a given sample is a mixture (convex combination) of several class conditioned distribution:
+    The hypothesis of Gaussian mixture models (GMM) is that the distribution of a given sample is the realization of a random vector which distribution is a mixture (convex combination) of several class conditioned distribution:
     \begin{equation}
         p(\mathbf{x}) = \sum_{c=1}^{C} \pi_c f_c(\mathbf{x}|\theta)
     \end{equation}
@@ -90,18 +93,17 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
         &= 2 \log \left( p(c) p(\mathbf{x}|c) \right) \nonumber \\
         &= 2 \log \left( \pi_c \frac{1}{(2\pi)^{\frac{d}{2}} |\boldsymbol{\Sigma}_c|^{\frac{1}{2}}} \exp \left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) \right) \right) \nonumber \\
         &= 2 \left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) \right) + 2 \log \left( \frac{1}{(2\pi)^{\frac{d}{2}} |\boldsymbol{\Sigma}_c|^{\frac{1}{2}}} \right) + 2 \log (\pi_c) \nonumber \\
-        &= - (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) - \log ((2\pi)^d|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c)
+        &= - (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) - \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c) - d \log (2\pi)
         \label{eq:decision}
     \end{align}
 
-    It is interesting to notice the covariance and its inverse are a key element of the decision function and that the estimation of these elements suffer from the curse of dimensionality. More precisely, the number of parameters to estimate (means, covariance matrices, proportions) increases quadratically relatively to the number of features and we need at least as many samples as parameters to make an estimation which can be an issue. For example, with hyperspectral data, we face high dimensional samples but very few samples are available.
+    It is interesting to notice the covariance and its inverse are a key element of the decision function and that the estimation of these elements suffer from the curse of dimensionality. More precisely, the number of parameters to estimate (mean vectors, covariance matrices, proportions) increases quadratically relatively to the number of features and we need at least as many samples as parameters to make an estimation which can be an issue. For example, with hyperspectral data, we face high dimensional samples but very few samples are labeled available because of the difficulty and the cost to collect ground-truth.
 
-    A lack of samples induces ill-conditioned covariance matrices and so unstable inversion. There are two major solutions to this problem. The first option is to use a regularization method to stabilize the inversion of the covariance matrices. The second option is to use a features extraction method in order to reduce the dimensionality of the samples.
+   A lack of samples induces ill-conditioned covariance matrices and so unstable inversion and computation of the determinant. There are two major solutions to this problem. First option is to use a regularization method to stabilize the inversion of the covariance matrices. Second option is to use a features extraction method in order to reduce the dimensionality of the samples.
 
     In our study based on GMM, a Ridge regularization method described in Section \ref{sec:regularization} is implemented but we mainly focus on a feature selection method named sequential forward features selection presented in Section \ref{sec:forward-presentation} and an amelioration of this algorithm the sequential floating forward features selection introduced in Section \ref{sec:floating-presentation}.
 
-    In order to evaluate the benefits of such methods for classification, we introduce in the next section several functions called criterion functions. These functions aim either to evaluate a criterion of good classification or either to evaluate the separability/similarity of class distributions. The choice of one of these criterion functions is up to the user and can depend on the specificity of the task. We purposely choose to present only some of possible functions among the most used. It is also to be noticed that the criterion function is not only use for evaluation in the case of the features selection algorithm presented hereafter but is indeed a parameter of the algorithm.
-
+    In order to evaluate the benefits of such methods for classification, we introduce in the next section several functions called criterion functions. These functions aim to evaluate either a criterion of good classification or the separability/similarity of class distributions.
 
     \subsection{Criterion function}
     \label{sec:criterion}
@@ -237,17 +239,17 @@ Two selection algorithms are presented the sequential forward features selection
     \subsection{Sequential forward features selection}
     \label{sec:forward-presentation}
 
-    The Sequential Forward Selection (SFS) starts with an empty set of selected features. Then it tests at each step for all the remaining features the value of a criterion function $J$ chosen by the user among the ones presented in Section \ref{sec:criterion} when the feature is added to the pool of selected features. The feature that maximizes the criterion function is definitively added to the pool of selected features and it moves to the next iteration. The algorithm stops when a given number of variables \emph{maxVar} has been selected.
+    The Sequential Forward Selection (SFS) starts with an empty set of selected features. Then it tests at each step for all the remaining features the value of a criterion function $J$ chosen among the ones presented in Section \ref{sec:criterion} when the feature is added to the pool of selected features. The feature that maximizes the criterion function is definitively added to the pool of selected features and it moves to the next iteration. The algorithm stops when a given number of variables \emph{maxVarNb} has been selected.
 
     To summarize, the features are selected one by one and the set of selected features are never put into questions. It results in a reasonable computational time but a suboptimal solution to the selection problem.
 
     \begin{algorithm}
     \caption{Sequential forward features selection\label{alg:sfs}}
     \begin{algorithmic}[1]
-    \REQUIRE $\mathcal{S},J,\text{maxVar}$
+    \REQUIRE $\mathcal{S},J,\text{maxVarNb}$
     \STATE $S=\emptyset$
     \STATE $F=\text{\{all variables\}}$
-    \WHILE{Repeat till $S$ contained $\text{maxVar}$ variables}
+    \WHILE{$text{card}(S) \leq maxVarNb$}
     \FORALL{$f_i \in F$}
     \STATE $R_i = J(\{S + f_i\})$
     \ENDFOR
@@ -454,7 +456,7 @@ Two selection algorithms are presented the sequential forward features selection
 
     \subsection{Objectives}
 
-    Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of my tutor M.Fauvel, we want to {\bfseries reproduce the SFS selection method and develop an upgrade version} corresponding to the floating forward selection described in the previous section. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
+    Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of M.Fauvel, we want to {\bfseries reproduce the SFS selection method and develop an upgrade version} corresponding to the floating forward selection described in the previous section. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
 
     Then, the aim is collaborate with CNES in order to {\bfseries produce an external module which could be plugged in the open-source library Orfeo Toolbox (OTB) developed by CNES} (\cite{christophe2008orfeo}). This module implements the same methods as the Python version but has to be written in C++ and be compatible with the OTB. The module obtained is a fork of a template furnished by OTB developers and is also available freely on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}}.
 
@@ -606,7 +608,7 @@ Two selection algorithms are presented the sequential forward features selection
                 \includegraphics[width=0.33\textwidth]{Fig/time_aisa_trials_20_JM.pdf} & \\
                 {\bfseries{(d)}} & {\bfseries{(e)}} &  \\
             \end{tabular}
-            \caption{Processing time for selection with 20 trials : {\bfseries (a)} using Cohen's kappa, {\bfseries (b)} using overall accuracy, {\bfseries (c)} using mean of F1-scores, {\bfseries (d)} using KL divergence, {\bfseries (e)} using JM distance.\label{fig:proc-time}}
+            \caption{(Figures temporaires en attente de resultats) Processing time for selection with 20 trials : {\bfseries (a)} using Cohen's kappa, {\bfseries (b)} using overall accuracy, {\bfseries (c)} using mean of F1-scores, {\bfseries (d)} using KL divergence, {\bfseries (e)} using JM distance.\label{fig:proc-time}}
         \end{figure}
 
 
@@ -624,7 +626,26 @@ Two selection algorithms are presented the sequential forward features selection
 
         \begin{figure}[!ht]
             \centering
-            \includegraphics[width=0.8\textwidth]{Fig/umldiag.png}
+            \begin{tikzpicture}
+                \begin{umlpackage}{otb}
+                    \umlclass[template={\footnotesize{InputType,LabelType}}]{MachineLearningModel}{
+                      n : uint
+                      }{}
+                \end{umlpackage}
+
+                \begin{umlpackage}{otbExternalFastFeaturesSelection}
+                    \umlclass[template={\footnotesize{InputType,LabelType}}, x=10]{GMMMachineLearningModel}{
+                      n : uint \\ t : float
+                    }{}
+                    \umlclass[template={\footnotesize{InputType,LabelType}}, x=10, y=-6]{GMMSelectionMachineLearningModel}{
+                      d : double
+                    }{
+                      \umlvirt{setB(b : B) : void} \\ getB() : B}
+                \end{umlpackage}
+
+                \umlinherit[geometry=-|]{GMMMachineLearningModel}{MachineLearningModel}
+                \umlinherit[geometry=-|]{GMMSelectionMachineLearningModel}{GMMMachineLearningModel}
+            \end{tikzpicture}
             \caption{UML digram of the developped OTB remote module.\label{fig:uml}}
         \end{figure}
 
@@ -667,10 +688,7 @@ Two selection algorithms are presented the sequential forward features selection
 
         \subsection{Code profiling}
 
-
-
-
-
+        A voir, si je trouve un truc lisible a presenter mais ca serait bien...
 
 
     \section{Experimental results comparison to classical classifiers}
