@@ -21,6 +21,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{pgfgantt}
+\usepackage{afterpage}
 
 \usepackage{./tikzuml-v1.0-2016-03-29/tikz-uml}
 \usetikzlibrary{positioning}
@@ -42,8 +43,58 @@
   }%
 }
 
+\newcommand\blankpage{%
+    \null
+    \thispagestyle{empty}%
+    \newpage}
+
+
 \begin{document}
-\maketitle
+% \maketitle
+
+\begin{titlepage}
+    \centering
+    \begin{tabular}{cc}
+        \includegraphics[width=0.15\textwidth]{Fig/ensta.pdf}\par\vspace{1cm} &
+        \includegraphics[width=0.15\textwidth]{Fig/upsud.jpg}\par\vspace{1cm} \\
+    \end{tabular}
+
+    {\scshape\LARGE ENSTA ParisTech - Université Paris Sud \par}
+    \vspace{1cm}
+    {\scshape\Large Final year internship\par}
+    \vspace{1.5cm}
+    {\huge\bfseries Report : Operational Feature Selection in Gaussian Mixture Models\par}
+    \vspace{2cm}
+    {\Large\itshape Adrien Lagrange\par}
+    \vfill
+    supervised by\par
+    Dr.~Mathieu \textsc{Fauvel}
+
+    \vfill
+
+% Bottom of the page
+    {\large \today\par}
+
+    % \afterpage{\blankpage}
+\end{titlepage}
+
+\thispagestyle{empty}
+\mbox{~}
+\vfill
+{\color{red}\Large\itshape This document is non-confidential. Thus, it can be broadcast outside in paper or electronic format.}
+\newpage
+
+\begin{abstract}
+Lorem ipsum\ldots
+\end{abstract}
+{\bf Keywords:} enter, keyword, here.
+\newpage
+
+\tableofcontents
+\newpage
+
+\listoffigures
+\newpage
 
 \section{Introduction}
 
@@ -57,35 +108,82 @@ There is a large diversity of method for feature selection. However, they usuall
 
 The objectives of the internship is to develop and implement a feature selection method based on GMM. The remaining of this mid-term report is organized as follows.
 
-\section{Non linear parsimonious features selection}
+\section{Organization}
+\label{sec:orga}
+
+    \subsection{Objectives}
+
+    Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of M.Fauvel, we want to {\bfseries reproduce the SFS selection method and develop an upgrade version} corresponding to the floating forward selection described in the previous section. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
+
+    Then, the aim is collaborate with CNES in order to {\bfseries produce an external module which could be plugged in the open-source library Orfeo Toolbox (OTB) developed by CNES} (\cite{christophe2008orfeo}). This module implements the same methods as the Python version but has to be written in C++ and be compatible with the OTB. The module obtained is a fork of a template furnished by OTB developers and is also available freely on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}}.
+
+    Finally, we want to {\bfseries test the efficiency of this selection method and compare it to a kernel-based method} (\cite{camps2010remote}). The testing is conducted first on hyperspectral images where features are directly the spectral band and secondly on remote sensing images where numerous and various features are used (texture features, HoG, morphological profiles, radiometric indexes, ...).
+
+    \subsection{Planning}
+
+    As can be expected, the cycle is conducted from high-level to low-level which means that the Python code is first developed and so allow us to set definitively the structure of the algorithm. The low-level C++ code is then developed in order to assure good performances and to respect the interface with the OTB.
+
+    Each implementation is followed by a testing period during which the code is tested with artificial and easily manipulable data. Moreover, the development of the C++ code is done in interaction with developers of the OTB and, in particular, a first meeting is organized at the early stage of the development to assure that the best choice are made and a second meeting is set during the validation of the C++ code to get feedbacks.
+
+    The experimentation are conducted at the end to demonstrate the interest of the project. The Gantt diagram \ref{gantt} summarized the expected organization of the project.
+
+    \begin{figure}[ht]
+        \centering
+        \resizebox{\linewidth}{!}{
+            \begin{ganttchart}[hgrid,
+                vgrid,
+                bar/.append style={fill=blue!30},
+                group/.append style={draw=black,fill=red!50},
+                title/.append style={fill=gray!20}]{1}{48}
+                \gantttitle{\bfseries April}{8}\gantttitle{\bfseries May}{8}\gantttitle{\bfseries June}{8}\gantttitle{\bfseries July}{8}\gantttitle{\bfseries August}{8}\gantttitle{\bfseries September}{8} \\
+                \ganttgroup{Development}{1}{26}\\
+                \ganttbar{\em Python Implementation}{1}{8} \\
+                \ganttbar{\em C++ Implementation}{9}{26} \\
+                \ganttmilestone{\em Orfeo Toolbox Users Days (CNES)}{11}\\
+                \ganttgroup{Testing}{7}{34}\\
+                \ganttbar{\em Validation Python code}{7}{18}\\
+                \ganttbar{\em Validation C++ code}{25}{34}\\
+                \ganttmilestone{\em Meeting CNES}{31}\\
+                \ganttgroup{Experimentation on real data}{20}{48}\\
+                \ganttbar{\em Experimentation on hyperspectral images}{20}{48}\\
+                \ganttbar{\em Experimentation with heterogeneous features}{32}{48}\\
+                \ganttmilestone{\em Mid-term report}{24}\\
+                \ganttmilestone{\em Final report}{47}
+            \end{ganttchart}}
+        \caption{Gantt diagram of the internship.}
+        \label{gantt}
+    \end{figure}
+
+\section{Features selection with Gaussian Mixture Models}
 \label{sec:theory}
 
 In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_i,y_i\}_{i=1}^{n}$ is the training set where $\mathbf{x}_i \in \mathbb{R}^d$ is the vector of features of the $i^{th}$ sample, $y_i = 1,...,C$ the associated label, C the number of labels, $n$ the number of samples and $n_c$ the number of samples of class $c$.
 
     \subsection{Gaussian Mixture Models}
 
-    The hypothesis of Gaussian mixture models (GMM) is that the distribution of a given sample is the realization of a random vector which distribution is a mixture (convex combination) of several class conditioned distribution:
+    The hypothesis of Gaussian mixture models (GMM) is that a given sample is the realization of a random vector which distribution is a mixture (convex combination) of several class conditioned distribution:
     \begin{equation}
         p(\mathbf{x}) = \sum_{c=1}^{C} \pi_c f_c(\mathbf{x}|\theta)
     \end{equation}
-    where $\pi_c$ is the prior i.e. the proportion of class $c$.
-    The Gaussian model assumes that each $f_c$ is , conditionally to $c$, a Gaussian distribution of parameters $\boldsymbol{\mu}_c$ and $\boldsymbol{\Sigma}_c$ ($f_c(\mathbf{x}|\theta) = \mathcal{N}_c(\boldsymbol{\mu}_c, \boldsymbol{\Sigma}_c)$) and so $f_c(\mathbf{x}|\theta)$ can be written
+    where $\pi_c$ is the prior i.e. the proportion of class $c$ and $f_c$ a probability density function parametrized by $\theta$.
+
+    The Gaussian model assumes that each $f_c$ is , conditionally to $c$, the probability density of a Gaussian distribution of parameters $\boldsymbol{\mu}_c$ and $\boldsymbol{\Sigma}_c$ and so $f_c(\mathbf{x}|\theta)$ can be written
     \begin{equation*}
-        f_c(\mathbf{x}|\theta) = \frac{1}{(2\pi)^{\frac{d}{2}} |\boldsymbol{\Sigma}_c|^{\frac{1}{2}}} \exp \left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) \right)
+        f_c(\mathbf{x}|\theta) = \frac{1}{(2\pi)^{\frac{d}{2}} |\boldsymbol{\Sigma}_c|^{\frac{1}{2}}} \exp \left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) \right).
     \end{equation*}
 
-    Such a model is used in the case of supervised learning and the class parameters $\boldsymbol{\mu}_c$ and $\boldsymbol{\Sigma}_c$ can be estimated using the training samples. In our work, we choose to compute them with the following unbiased empirical estimator
+    Such a model is used in the case of supervised learning and the class parameters $\boldsymbol{\mu}_c$ and $\boldsymbol{\Sigma}_c$ can be estimated using the training samples. In our work, we choose to compute them with the conventional unbiased empirical estimator
     \begin{align}
-        \hat{\pi}_c &= \frac{n_c}{n}\\
-        \hat{\boldsymbol{\mu}}_c &= \frac{1}{n_c} \sum_{\{i|y_i = c\}} \mathbf{x}_i \\
-        \hat{\boldsymbol{\Sigma}}_c &= \frac{1}{(n_c - 1)} \sum_{\{i|y_i = c\}} (\mathbf{x}_i - \boldsymbol{\mu}_c) (\boldsymbol{}x_i - \boldsymbol{\mu}_c)^t
+        \hat{\pi}_c &= \frac{n_c}{n},\\
+        \hat{\boldsymbol{\mu}}_c &= \frac{1}{n_c} \sum_{\{i|y_i = c\}} \mathbf{x}_i ,\\
+        \hat{\boldsymbol{\Sigma}}_c &= \frac{1}{(n_c - 1)} \sum_{\{i|y_i = c\}} (\mathbf{x}_i - \boldsymbol{\mu}_c) (\boldsymbol{}x_i - \boldsymbol{\mu}_c)^t.
     \end{align}
 
-    To determine the class of a samples using the Bayes' law, the maximum a posteriori (MAP) estimate is used and thus the decision rule can be written as
+    To determine the class of a samples, the maximum a posteriori (MAP) rule is used and thus, if we simplify with Bayes' law, the decision rule can be written as
     \begin{align*}
-        \mathbf{x} \text{ belongs to } c &\Leftrightarrow c = \text{arg} \max_{c \in C} p(c|\mathbf{x}) \\
-                                         &\Leftrightarrow c = \text{arg} \max_{c \in C} \frac{p(c) p(\mathbf{x}|c)}{p(x)} \\
-                                         &\Leftrightarrow c = \text{arg} \max_{c \in C} p(c) p(\mathbf{x}|c) \\
+        \mathbf{x} \text{ belongs to } c &\Leftrightarrow c = \text{arg} \max_{c \in C} p(c|\mathbf{x}),\\
+                                         &\Leftrightarrow c = \text{arg} \max_{c \in C} \frac{p(c) p(\mathbf{x}|c)}{p(\mathbf{x})},\\
+                                         &\Leftrightarrow c = \text{arg} \max_{c \in C} p(c) p(\mathbf{x}|c).\\
     \end{align*}
     By taking the log, a simplified decision formula is obtained
     \begin{align}
@@ -93,41 +191,45 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
         &= 2 \log \left( p(c) p(\mathbf{x}|c) \right) \nonumber \\
         &= 2 \log \left( \pi_c \frac{1}{(2\pi)^{\frac{d}{2}} |\boldsymbol{\Sigma}_c|^{\frac{1}{2}}} \exp \left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) \right) \right) \nonumber \\
         &= 2 \left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) \right) + 2 \log \left( \frac{1}{(2\pi)^{\frac{d}{2}} |\boldsymbol{\Sigma}_c|^{\frac{1}{2}}} \right) + 2 \log (\pi_c) \nonumber \\
-        &= - (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) - \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c) - d \log (2\pi)
+        &= - (\mathbf{x} - \boldsymbol{\mu}_c)^t \boldsymbol{\Sigma}_c^{-1} (\mathbf{x} - \boldsymbol{\mu}_c) - \log (|\boldsymbol{\Sigma}_c|) + 2 \log (\pi_c) - d \log (2\pi).
         \label{eq:decision}
     \end{align}
 
-    It is interesting to notice the covariance and its inverse are a key element of the decision function and that the estimation of these elements suffer from the curse of dimensionality. More precisely, the number of parameters to estimate (mean vectors, covariance matrices, proportions) increases quadratically relatively to the number of features and we need at least as many samples as parameters to make an estimation which can be an issue. For example, with hyperspectral data, we face high dimensional samples but very few samples are labeled available because of the difficulty and the cost to collect ground-truth.
+    It is interesting to notice that the covariance, its inverse and its determinant are a key element of the decision function and that the estimation of these elements suffer from the curse of dimensionality. More precisely, the number of parameters to estimate (mean vectors, covariance matrices, proportions) increases quadratically relatively to the number of features and we need at least as many samples as parameters to make an estimation which can be an issue. For example, with hyperspectral data, we face high dimensional samples but very few samples are labeled available because of the difficulty and the cost to collect ground-truth.
 
-   A lack of samples induces ill-conditioned covariance matrices and so unstable inversion and computation of the determinant. There are two major solutions to this problem. First option is to use a regularization method to stabilize the inversion of the covariance matrices. Second option is to use a features extraction method in order to reduce the dimensionality of the samples.
+    A lack of samples induces ill-conditioned covariance matrices and so unstable inversion and computation of the determinant. There are two major solutions to this problem. First option is to use a regularization method to stabilize the inversion of the covariance matrices. Second option is to use a features extraction method in order to reduce the dimensionality of the samples.
 
-    In our study based on GMM, a Ridge regularization method described in Section \ref{sec:regularization} is implemented but we mainly focus on a feature selection method named sequential forward features selection presented in Section \ref{sec:forward-presentation} and an amelioration of this algorithm the sequential floating forward features selection introduced in Section \ref{sec:floating-presentation}.
+    In our study based on GMM, a Ridge regularization method described in Section \ref{sec:regularization} is implemented. Then we focus on a feature selection method named sequential forward features selection presented in Section \ref{sec:forward-presentation} and an improvement of this algorithm, the sequential floating forward features selection introduced in Section \ref{sec:floating-presentation}.
 
-    In order to evaluate the benefits of such methods for classification, we introduce in the next section several functions called criterion functions. These functions aim to evaluate either a criterion of good classification or the separability/similarity of class distributions.
+    In order to evaluate the benefits of such methods for classification, we introduce in the next section several functions called criterion functions.
 
     \subsection{Criterion function}
     \label{sec:criterion}
 
-        \subsubsection{Measures of good classification}
+    Criterion functions aim to evaluate either a rate of good classification or the separability/similarity of class distributions. These functions are used to estimate which sets of variables are the best to represent data, to assure the separability of the classes and to perform classification. The choice of a criterion function is the choice of a way to compare sets of variables.
 
-        All this measures of good classification are based on an error matrix $M$ called confusion matrix which is defined so that $M_{ij}$ is the number of samples of class $i$ classified as class $j$. The confusion matrix allows the computation of several interesting values relatively to each class the number of True Positive (TP) corresponding to good prediction, True Negative (TN) corresponding to good classification of the other class, False Negative (FN) corresponding to the samples of the class labeled as an other class and the False Positive (FP) corresponding to the samples wrongly classified as part of of this class. Figure \ref{fig:confusion} illustrates the definition of this values.
+        \subsubsection{Measures of good classification}
+        \label{sec:criterion-rate}
+
+        As described in \cite{congalton2008assessing} (chapter 4), all this measures of good classification are based on an error matrix $M$ called confusion matrix which is defined so that $M_{ij}$ is the number of samples of class $i$ classified as class $j$. The confusion matrix allows the computation of several interesting values relatively to each class the number of True Positive (TP) corresponding to good prediction, True Negative (TN) corresponding to good classification of the other class, False Negative (FN) corresponding to the samples of the class labeled as an other class and the False Positive (FP) corresponding to the samples wrongly classified as part of of this class. Figure \ref{fig:confusion} illustrates the definition of this values.
 
         \begin{figure}[!ht]
             \centering
-            \begin{tabular}{c >{\bfseries}r @{\hspace{0.7em}}c @{\hspace{0.4em}}c @{\hspace{0.7em}}l}
+            \begin{tabular}{c >{\bfseries}r @{\hspace{0.7em}}c @{\hspace{0.4em}}c @{\hspace{0.4em}}c @{\hspace{0.7em}}l}
               \multirow{10}{*}{\parbox{1.1cm}{\bfseries\raggedleft Actual\\ value}} &
-                & \multicolumn{2}{c}{\bfseries Prediction outcome} \\
-              & & \bfseries p & \bfseries n \\
-              & p$'$ & \MyBox{True}{Positive} & \MyBox{False}{Negative} \\[2.4em]
-              & n$'$ & \MyBox{False}{Positive} & \MyBox{True}{Negative}
+                & \multicolumn{3}{c}{\bfseries Prediction outcome} \\
+              & & \bfseries $c_1$ & \bfseries $c_2$ & \bfseries $c_3$ \\
+              & $c_1'$ & \MyBox{True}{Positive} & \MyBox{False}{Negative} & \MyBox{False}{Negative} \\[2.4em]
+              & $c_2'$ & \MyBox{False}{Positive} & \MyBox{True}{Negative} & \MyBox{~}{~} \\[2.4em]
+              & $c_3'$ & \MyBox{False}{Positive} & \MyBox{~}{~} & \MyBox{True}{Negative}
             \end{tabular}
-            \caption{Confusion matrix}
+            \caption{Confusion matrix with TP, TN, FP and FN relatively to $c_1$}
             \label{fig:confusion}
         \end{figure}
 
         \paragraph{The overall accuracy} is simply the rate of the number of samples with the correct predicted label over the number of samples. This metric is easy to interpret but is biased in the case of unbalanced classes.
 
-        \paragraph{The Cohen's kappa} is a statistic which measure the probabilities of agreement between predictions and ground-truth. This metric tends to give an equal importance to each class but is hard to interpret.
+        \paragraph{The Cohen's kappa} is a statistic which measure the probabilities of agreement between predictions and ground-truth. This metric tends to give an equal importance to each class.
 
         \paragraph{The mean F1 score} is the average of the F1 score for each class and the F1 score is the harmonic mean of the precision (number of True Positive over True Positive plus False Positive) and the recall (number of True Positive over True Positive plus False Negative).
 
@@ -138,21 +240,29 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
         \end{align}
         where TP stands for True Positive, FN for False Negative, FP for False Positive, $pa$ is the probability of agreement defined by $pa = Overall Accuracy$  and $pr$ the probability of random agreement defined by $pr = \sum_{c=1}^{C} \frac{TP_c}{FP_c} \frac{TP_c}{FN_c}$.
 
-        In order to compute these metrics, the predicted labels are needed and so we need to compute the decision function (Equation \ref{eq:decision}). Moreover to estimate this measures of good classification, a cross-validation method is used which reduces both bias and variance of the estimation.
+        In order to estimate classification rate, the GMM has to be trained and tested on separate datasets. In our case, we choose to use a cross-validation process over our training set. Thus, the training set is divided in k folds, then, the training is done with $(k-1)$ folds and the performances are estimated with the remaining fold. For more details about cross-validation, see \cite{opac-b1127878} (Chapter 7.10).
 
         \subsubsection{Measures of similarity between distributions}
 
-        \paragraph{The Kullback–Leibler divergence} is a measure of distance between two distributions. It actually measures the amount of information lost when the first distribution is approximated by the second one. The formal definition is
+        The second type of criterion functions is a measure of distance between two distributions. These measures are called divergence function and are defined so that, if we note $S$ a space of all probability distribution with same support, it verifies
+        \begin{align*}
+            &\forall (p,q) \in S, \text{Div}(p,q) \geq 0, \\
+            &\text{Div}(p,q) = 0 \Leftrightarrow p = q.
+        \end{align*}
+        More specifically, we focus on two particular divergence: the Kullback–Leibler divergence and the Jeffries–Matusita distance. The advantage of these divergence is that they have a simplified expression in the case of Gaussian model. The simplification allows us to get rid of any integration calculus which could be a major problem when dealing with high-dimensional data.
+
+
+        \paragraph{The Kullback–Leibler divergence} measures the amount of information lost when the first distribution is approximated by the second one. The formal definition is
         \begin{equation}
-            \text{Div}_{KL}(c_i,c_j) = \int_\mathbf{x} p(\mathbf{x}|c_i) \ln(\frac{p(\mathbf{x}|c_i)}{p(\mathbf{x}|c_j)}) d\mathbf{x}
+            \text{Div}_{KL}(c_i,c_j) = \int_\mathbf{x} p(\mathbf{x}|c_i) \ln(\frac{p(\mathbf{x}|c_i)}{p(\mathbf{x}|c_j)}) d\mathbf{x}.
         \end{equation}
         And in the case of Gaussian model, it can be rewritten as follows
         \begin{align}
             \text{Div}_{KL}(c_i,c_j) = \frac{1}{2} \left( \text{Tr} (\boldsymbol{\Sigma}_{c_i}^{-1} \boldsymbol{\Sigma}_{c_j}) + (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i})^t \boldsymbol{\Sigma}_{c_i}^{-1} (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i}) - d + \log \left( \frac{|\boldsymbol{\Sigma}_{c_i}|}{|\boldsymbol{\Sigma}_{c_j}|} \right) \right)
         \end{align}
-        where Tr is the trace operator and $k$ the dimension of the distribution.
+        where Tr is the trace operator and $d$ the dimension of the distribution.
 
-        It can be noticed that the KL divergence is not symmetric and so the symmetrized version is used to compute the criterion function. In the case of Gaussian model, the symmetrization induces the following simplification of the formula
+        It can be noticed that the KL divergence is not symmetric, i.e. $\text{Div}_{KL}(c_i,c_j) \ne \text{Div}_{KL}(c_j,c_i)$, and so the symmetrized version is used to compute the criterion function. In the case of Gaussian model, the symmetrization induces the following simplification of the formula
         \begin{align}
             \text{SKL}_{ij} &=\text{Div}_{KL}(c_i,c_j) + \text{Div}_{KL}(c_j,c_i) \nonumber \\
             &= \frac{1}{2} \left( \text{Tr} (\boldsymbol{\Sigma}_{c_i}^{-1} \boldsymbol{\Sigma}_{c_j} + \boldsymbol{\Sigma}_{c_j}^{-1} \boldsymbol{\Sigma}_{c_i}) + (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i})^t (\boldsymbol{\Sigma}_{c_i}^{-1} + \boldsymbol{\Sigma}_{c_j}^{-1}) (\boldsymbol{\mu}_{c_i} - \boldsymbol{\mu}_{c_i}) - 2d \right)
@@ -163,7 +273,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
             \text{C}_{SKL} = \sum_{i=1}^{C} \sum_{j=i + 1}^{C} \pi_{c_i} \pi_{c_j} \text{SKL}_{ij}
         \end{equation}
 
-        \paragraph{The Bhattacharyya distance} is an other measure of similarity between two distributions. In fact, we do not discuss the efficiency of this measure in our work and simply used it to compute the next measure. The Bhattacharyya distance is computed as follows
+        \paragraph{The Bhattacharyya distance} is defined as follows
         \begin{equation}
             \text{B}_{ij} = - \ln \left( \int_\mathbf{x} \sqrt{p(\mathbf{x}|c_i) p(\mathbf{x}|c_j)} d\mathbf{x} \right)
         \end{equation}
@@ -192,47 +302,93 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 \label{sec:regularization}
 
     \subsection{Principe of Ridge Regularization}
-    As introduced in the previous section, the aim of a regularization method is to stabilize the inversion of the covariance matrix in the context of high dimensionality which often imply a ill-conditioned matrix. In particular, the Ridge regularization proposes to solve the problem in adding a small value $\tau$ to each eigenvalues of the covariance matrix. In our case, we choose to add the same constant to each eigenvalues but it is not compulsory in a general case.
+    As introduced in the previous section, the aim of a regularization method is to stabilize the inversion of the covariance matrix in the context of high dimensionality which often imply a badly-conditioned matrix.
 
-    Thus, to perform the regularization, the covariance matrix is decomposed with a diagonalization algorithm for symmetric matrices s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$ where $\mathbf{Q}$ is the matrix of eigenvectors and $\boldsymbol{\Lambda}$ is the diagonal matrix of eigenvalues. When the decomposition is available, the regularization almost finish and the decision function is simply rewritten as follow
+    The Ridge regularization is a particular case of the Tikhonov regularization introduced in \cite{hoerl1970ridge} which aim to penalize the linear problem used to compute the inverse of the covariance matrix by the norm of the inverse. We want to obtain the regularized inverse by solving
+    \begin{equation}
+        \hat{\mathbf{A}} = \min_\mathbf{A} \lVert\boldsymbol{\Sigma} \mathbf{A} - \mathbf{I}\rVert^2 + \lVert\boldsymbol{\Gamma}\mathbf{A}\rVert^2.
+    \end{equation}
+    In deriving the expression and looking at the minimum, we find that the explicit solution to this problem is
+    \begin{equation}
+        \hat{\mathbf{A}} = (\boldsymbol{\Sigma}^t\boldsymbol{\Sigma} + \boldsymbol{\Gamma}^t \boldsymbol{\Gamma})^{-1} \boldsymbol{\Sigma}.
+    \end{equation}
+    There are then two cases, either we choose $\boldsymbol{\Gamma} = \sqrt{\tau} \mathbf{I}$ which corresponds to the Tikhonov regularization or $\boldsymbol{\Gamma} = \sqrt{\tau} \boldsymbol{\Sigma}^{\frac{1}{2}}$ which corresponds to the Ridge regularization with $\tau$ a scalar. Then, we get
+    \begin{align}
+        \text{Tikhonov: }& \hat{\mathbf{A}} = (\boldsymbol{\Sigma}^2 + \tau \mathbf{I})^{-1} \boldsymbol{\Sigma},\\
+        \text{Ridge: }& \hat{\mathbf{A}} = (\boldsymbol{\Sigma} + \tau \mathbf{I})^{-1}.
+    \end{align}
+
+    It is interesting to see the effect of the regularization method through the eigenvalues of the regularized inverse. Thus, we obtain the following expression
+    \begin{align}
+        \text{Tikhonov: }& \hat{\lambda}_i^{-1} = \frac{\lambda_i}{\lambda_i^2 + \tau},\\
+        \text{Ridge: }& \hat{\lambda}_i^{-1} = \frac{1}{\lambda_i + \tau},
+    \end{align}
+    where $\lambda_i$ is the ith eigenvalue of the covariance matrix and $\hat{\lambda}_i^{-1}$ the eigenvalue of the regularized inverse.
+
+    With the help of Figure~\ref{fig:eigenvalues}, we can see that the difference between these two regularization is the way to treat small eigenvalues. The Ridge regression has two advantages. First, it is monotonous and secondly it does not converge to zero when eigenvalue tends to zero.
+
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[width=0.7\textwidth]{Fig/eigenval.pdf}
+        \caption{Consequence of regularization on eigenvalues.\label{fig:eigenvalues}}
+    \end{figure}
+
+    In particular, the Ridge regularization proposes to solve the problem in adding a small value $\tau$ to each eigenvalues of the covariance matrix. In our case, we choose to add the same constant to each eigenvalues but it is not compulsory in a general case.
+
+    Thus, in practice, we choose to use Ridge regularization. To perform the regularization, the covariance matrix is decomposed with a diagonalization algorithm for symmetric matrices s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$ where $\mathbf{Q}$ is the matrix of eigenvectors and $\boldsymbol{\Lambda}$ is the diagonal matrix of eigenvalues. When the decomposition is available, the regularization almost finish and the decision function is simply rewritten as follow
 
     \begin{align}
     \label{eq:decision-ridge}
-        Q_c(\mathbf{x}) = - (\mathbf{x} - \boldsymbol{\mu}_c)^t \mathbf{Q}_c (\boldsymbol{\Lambda}_c + \tau \mathbf{I})^{-1} \mathbf{Q}_c^t (\mathbf{x} - \boldsymbol{\mu}_c) - \log ((2\pi)^d|\boldsymbol{\Sigma}_c + \tau \mathbf{I}|) + 2 \log (\pi_c)
+        Q_c(\mathbf{x}) = - (\mathbf{x} - \boldsymbol{\mu}_c)^t \mathbf{Q}_c (\boldsymbol{\Lambda}_c + \tau \mathbf{I})^{-1} \mathbf{Q}_c^t (\mathbf{x} - \boldsymbol{\mu}_c) - \log (|\boldsymbol{\Sigma}_c + \tau \mathbf{I}|) + 2 \log (\pi_c) - d \log (2\pi),
     \end{align}
-    where $\mathbf{I}$ is the identity matrix. It is to be noticed that $(\boldsymbol{\Lambda} + \tau \mathbf{I})$ is also a diagonal matrix and so the inverse is easily obtained in inverting each element of the matrix.
+    where $\mathbf{I}$ is the identity matrix. It is to be noticed that $(\boldsymbol{\Lambda} + \tau \mathbf{I})$ is also a diagonal matrix and so the inverse is easily obtained in inverting each diagonal element of the matrix.
 
     \subsection{Implementation}
 
-    The main steps of the training algorithm when using Ridge regularization are summarized in Algorithm \ref{alg:ridge}. Indeed, before training the GMM model, a preliminary step is needed in order to determine a good value for the parameter $\tau$ and to do so, a gridsearch is performed with a set of values $\mathcal{P}$ given by the user. Moreover, to have a good estimation of the quality of the classification with a given $\tau$ a cross-validation method is used. Thus, the training set is divided in k folds, then, the training is done with $(k-1)$ folds and the performances are estimated with the remaining fold.
+    The main steps of the training algorithm when using Ridge regularization are summarized in Algorithm \ref{alg:ridge}. Indeed, before training the GMM model, a preliminary step is needed in order to determine a good value for the parameter $\tau$ and to do so, a gridsearch is performed with a set of values $\mathcal{P}$ given by the user. To estimate the quality of the classification with a given $\tau$, one of the good classification criterion presented in Section~\ref{sec:criterion-rate} is used. As explained at the end of the same section, the classification rate is computed with a cross-validation process.
 
-    A particularity of this regularization method is used to accelerate the gridsearch. More precisely, the two computationally costly step are the computation of the inverse and the determinant of the regularized covariance matrices and it is important to see that these operations can be performed only once to test all $\tau$. The covariance matrix is diagonalized before selecting $\tau$ and the eigenvalues and eigenvectors are stored and used to test all $\tau$ using Equation \ref{eq:decision-ridge}.
+    A particularity of this regularization method is used to accelerate the gridsearch. More precisely, the two computationally costly step are the computation of the inverse and the determinant of the regularized covariance matrices and it is important to see that these operations can be performed only once to test all $\tau$. The covariance matrix is diagonalized before selecting $\tau$ and the eigenvalues and eigenvectors are stored and the regularized inverse and determinant can be update as follows
+    \begin{align}
+        \hat{\boldsymbol{\Sigma}}_c^{-1} &= \mathbf{Q}_c (\boldsymbol{\Lambda}_c + \tau \mathbf{I})^{-1} \mathbf{Q}_c^t, \nonumber\\
+        \log (|\hat{\boldsymbol{\Sigma}}_c|) &= \log (|\boldsymbol{\Sigma}_c + \tau \mathbf{I}|) = \sum_{i=1}^{d} \log (\lambda_i + \tau).
+        \label{eq:update-reg}
+    \end{align}
 
     \begin{algorithm}
     \caption{Ridge Regularization training steps\label{alg:ridge}}
     \begin{algorithmic}[1]
     \REQUIRE $\mathcal{S},k,\mathcal{P}$
+    \STATE Learn GMM with $\mathcal{S}$
     \STATE Randomly cut $\mathcal{S}$ in $k$ subsets such as $\mathcal{S}_1 \cup \text{...} \cup \mathcal{S}_k = \mathcal{S}$ and $\mathcal{S}_i \cap \mathcal{S}_j = \emptyset$
     \FORALL{$\mathcal{S}_i$}
-    \STATE Learn GMM with $\mathcal{S} \setminus \mathcal{S}_i$
-    \STATE Compute decomposition of covariance matrices of each classes s.t. $\boldsymbol{\Sigma}_c = \mathbf{Q}_c \boldsymbol{\Lambda}_c \mathbf{Q}_c^t$
+    \STATE Update GMM model for $i^{th}$ fold with Equations \ref{eq:update-cv1} and \ref{eq:update-cv2}
+    \STATE Compute decomposition of covariance matrices of each class s.t. $\boldsymbol{\Sigma}_c = \mathbf{Q}_c \boldsymbol{\Lambda}_c \mathbf{Q}_c^t$
     \FORALL{$\tau \in \mathcal{P}$}
+    \STATE Update inverse and logdet with Equations \ref{eq:update-reg}
     \STATE Estimate classification rate on $\mathcal{S}_i$ using Equation \ref{eq:decision-ridge}
     \ENDFOR
     \ENDFOR
     \STATE Average the classification rate over the $k$ folds
     \STATE Compute $\text{arg} \max_{\tau}$ of the classification rates to get the best parameter $\tau^*$
-    \STATE Learn GMM with the whole training set $\mathcal{S}$ and parametrize the GMM with $\tau^*$
+    \STATE Parametrize the GMM with $\tau^*$
     \end{algorithmic}
     \end{algorithm}
 
-    Finally, another trick could used to optimize the gridsearch. As explained in the next section, it is possible to avoid the learning step on the $(k-1)$ fold and instead learn the model with the whole dataset and deduce the submodel used for cross-validation from the complete model and the mean vector and covariance matrix of the $k^{th}$ fold.
+    Finally, another trick could used to optimize the gridsearch. As explained in Section~\ref{sec:update-cv}, it is possible to avoid the learning step on the $(k-1)$ fold and instead learn the model with the whole dataset and deduce the submodel used for cross-validation from the complete model and the mean vector and covariance matrix of the $k^{th}$ fold.
 
     As stated before, we choose to implement a basic Ridge regression method and only the small improvement explained herebefore as been proposed. To the contrary, we choose in our study to focus more on a feature selection method named sequential forward features selection described in following section.
 
 \section{Features selection}
 
-We recall that the aim of feature selection method is to select a subset of variables to described each samples and so to get rid of high dimensionality and its curse. It is also important to underline that the proposed method is a \emph{selection} method and not an \emph{extraction} method. It means the subset of variables obtained at the end is composed of actual variables of the original set and not variables built as combination of several others as it is the case for example with PCA. This choice is made to assure an easier interpretation by the user of the obtained subset of variables.
+The objective of feature selection method is to select a subset of variables to describe each sample and so to get rid of high dimensionality and its curse.
+
+Features selection algorithm may be divided into three types. The first type which called filter method is based uniquely on data analysis. Features are ranked according to a statistical analysis of the data. For example, the Principal Component Analysis (PCA) described in \cite{jimenez1998supervised} is a typical filter method or else various metrics \cite{bruzzone1995extension}, \cite{biesiada2007feature}, \cite{demir2008phase}.
+
+The second sort are known as wrapper methods which can be seen as search method to determine the best set of variables for a given learning model. As exhaustive searches are out of question in a practical amount of time, numerous search strategies have been designed some optimal under particular hypothesis \cite{narendra1977branch} and other suboptimal but easier to set up \cite{whitney1971direct}, \cite{somol1999adaptive}. The advantage of such method compare to filter method is that they are dedicated to a particular model but on the other hand, as they require the training of multiple models to test various set of variables, they tend to be slower.
+
+The third type corresponds to the embedded method which do not separate the features selection process from the learning algorithm and allow interaction between the two processes. The basic example of such method is the decision tree algorithm in which a feature is selected for creation of each node. Embedded methods also exist for other model, e.g. SVM (\cite{guyon2002gene}, \cite{weston2003use}).
+
+The selection method proposed in this work in a wrapper method associated to GMM models. It is important to underline that this method is a \emph{selection} method and not an \emph{extraction} method. It means the subset of variables obtained is composed of actual variables of the original set and not variables built as combination of several others as it is the case for example with PCA. This choice is made to assure an easier interpretation by the user of the obtained subset of variables.
 
 Two selection algorithms are presented the sequential forward features selection method (Section \ref{sec:forward-presentation}) and the sequential floating forward feature selection method (\ref{sec:floating-presentation}) the second being a more complex variation of the first.
 
@@ -241,7 +397,7 @@ Two selection algorithms are presented the sequential forward features selection
 
     The Sequential Forward Selection (SFS) starts with an empty set of selected features. Then it tests at each step for all the remaining features the value of a criterion function $J$ chosen among the ones presented in Section \ref{sec:criterion} when the feature is added to the pool of selected features. The feature that maximizes the criterion function is definitively added to the pool of selected features and it moves to the next iteration. The algorithm stops when a given number of variables \emph{maxVarNb} has been selected.
 
-    To summarize, the features are selected one by one and the set of selected features are never put into questions. It results in a reasonable computational time but a suboptimal solution to the selection problem.
+    To summarize, the features are selected one by one and the set of selected features are never questioned. It results in a reasonable computational time but a suboptimal solution to the selection problem meaning that a better subset of variables could exist.
 
     \begin{algorithm}
     \caption{Sequential forward features selection\label{alg:sfs}}
@@ -249,7 +405,7 @@ Two selection algorithms are presented the sequential forward features selection
     \REQUIRE $\mathcal{S},J,\text{maxVarNb}$
     \STATE $S=\emptyset$
     \STATE $F=\text{\{all variables\}}$
-    \WHILE{$text{card}(S) \leq maxVarNb$}
+    \WHILE{$\text{card}(S) \leq maxVarNb$}
     \FORALL{$f_i \in F$}
     \STATE $R_i = J(\{S + f_i\})$
     \ENDFOR
@@ -274,7 +430,7 @@ Two selection algorithms are presented the sequential forward features selection
         \caption{Example datasets: {\bfseries{(a)}} 2 classes and 2 features but only one informative feature, {\bfseries{(b)}} same dataset with a reduced gap between means of informative feature.\label{fig:expl_dataset}}
     \end{figure}
 
-    In the case of the example presented in Figure \ref{fig:expl_dataset}, we compute the various criterion functions using a single feature and summarize it in Table \ref{tab:expl_metric}. It corresponds to first step of the SFS. And we can see that all the criterion functions are maximum with the feature 1 which makes sense because the projection of the learned Gaussian distribution effectively seems separable only for feature 1. So the algorithm will has expected select the feature 1 as the best features to perform classification.
+    In the case of the example presented in Figure \ref{fig:expl_dataset}, we compute the criterion functions described in \ref{sec:criterion} using a single feature and summarize it in Table \ref{tab:expl_metric}. It corresponds to first step of the SFS. And we can see that all the criterion functions are maximum with the feature 1 which makes sense because the projection of the learned Gaussian distribution effectively seems separable only for feature 1. So the algorithm will has expected select the feature 1 as the best features to perform classification.
 
     \begin{table}[!ht]
         \centering
@@ -342,13 +498,14 @@ Two selection algorithms are presented the sequential forward features selection
     In term of computational efficiency, the main issue is to find an efficient way to compute the mean vector and the covariance matrix and its inverse and to do it only when it is absolutely necessary. More specifically, we develop an optimized way to derive the submodel for cross-validation from the full model and we minimize the number of costly operations during a step of the selection algorithm.
 
         \subsubsection{Update for cross validation}
+        \label{sec:update-cv}
 
         Based on \cite{fauvel2015fast}, a method to accelerate the k-fold cross-validation process in the case of criterion functions based on correct classification measures was implemented. The idea is to estimate the GMM model with the whole training set and then, instead of training a model on $(k-1)$ folds, the complete model and the mean vector and the covariance matrix of the $k^{th}$ fold is used to derive the corresponding submodel.
 
         The following formulae can be obtained (details of calculation in Appendix \ref{app:cv_maj})
         \begin{align}
-            \boldsymbol{\mu}_c^{n_c-\nu_c} &= \frac{n_c \boldsymbol{\mu}_c^{n_c} - \nu_c \boldsymbol{\mu}_c^{\nu_c}}{n_c - \nu_c} \\
-            \boldsymbol{\Sigma}_c^{n_c-\nu_c} &= \frac{1}{n_c-\nu_c-1} ( (n_c-1) \boldsymbol{\Sigma}_c^{n_c} - (\nu_c-1) \boldsymbol{\Sigma}_c^{\nu_c} - \frac{n_c \nu_c}{(n_c-\nu_c)} (\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})(\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})^t)
+            \boldsymbol{\mu}_c^{n_c-\nu_c} &= \frac{n_c \boldsymbol{\mu}_c^{n_c} - \nu_c \boldsymbol{\mu}_c^{\nu_c}}{n_c - \nu_c} \label{eq:update-cv1}\\
+            \boldsymbol{\Sigma}_c^{n_c-\nu_c} &= \frac{1}{n_c-\nu_c-1} ( (n_c-1) \boldsymbol{\Sigma}_c^{n_c} - (\nu_c-1) \boldsymbol{\Sigma}_c^{\nu_c} - \frac{n_c \nu_c}{(n_c-\nu_c)} (\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})(\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})^t) \label{eq:update-cv2}
         \end{align}
         where $\nu_c$ is the number of samples of class $c$ removed from the set.
 
@@ -450,52 +607,6 @@ Two selection algorithms are presented the sequential forward features selection
         Nevertheless, during an iteration of the selection algorithm, it still needs to invert the covariance matrix of the previous iteration. In order to so, we choose to perform a decomposition in eigenvalues and eigenvectors using algorithm specific for symmetric matrices. In other words, we find $\boldsymbol{\Lambda}$ the diagonal matrix of eigenvalues and $\mathbf{Q}$ the matrix of eigenvectors s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$.
 
         This decomposition has several advantages. First, it is very simple to compute the determinant once the eigenvalues are available because the determinant is equal to the product of these values. Secondly, it is possible to check the eigenvalues and so to assure a better computational stability. Due to the curse of dimensionality, the covariance matrix is sometimes ill-estimated and the results is that some eigenvalues are really small (below computational precision) and the decomposition helps us to check their actual values and if they are below EPS\_FLT which the machine maximum precision for a float, we set these eigenvalues to EPS\_FLT.
-
-\section{Organization}
-\label{sec:orga}
-
-    \subsection{Objectives}
-
-    Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of M.Fauvel, we want to {\bfseries reproduce the SFS selection method and develop an upgrade version} corresponding to the floating forward selection described in the previous section. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
-
-    Then, the aim is collaborate with CNES in order to {\bfseries produce an external module which could be plugged in the open-source library Orfeo Toolbox (OTB) developed by CNES} (\cite{christophe2008orfeo}). This module implements the same methods as the Python version but has to be written in C++ and be compatible with the OTB. The module obtained is a fork of a template furnished by OTB developers and is also available freely on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}}.
-
-    Finally, we want to {\bfseries test the efficiency of this selection method and compare it to a kernel-based method} (\cite{camps2010remote}). The testing is conducted first on hyperspectral images where features are directly the spectral band and secondly on remote sensing images where numerous and various features are used (texture features, HoG, morphological profiles, radiometric indexes, ...).
-
-    \subsection{Planning}
-
-    As can be expected, the cycle is conducted from high-level to low-level which means that the Python code is first developed and so allow us to set definitively the structure of the algorithm. The low-level C++ code is then developed in order to assure good performances and to respect the interface with the OTB.
-
-    Each implementation is followed by a testing period during which the code is tested with artificial and easily manipulable data. Moreover, the development of the C++ code is done in interaction with developers of the OTB and, in particular, a first meeting is organized at the early stage of the development to assure that the best choice are made and a second meeting is set during the validation of the C++ code to get feedbacks.
-
-    The experimentation are conducted at the end to demonstrate the interest of the project. The Gantt diagram \ref{gantt} summarized the expected organization of the project.
-
-    \begin{figure}[ht]
-        \centering
-        \resizebox{\linewidth}{!}{
-            \begin{ganttchart}[hgrid,
-                vgrid,
-                bar/.append style={fill=blue!30},
-                group/.append style={draw=black,fill=red!50},
-                title/.append style={fill=gray!20}]{1}{48}
-                \gantttitle{\bfseries April}{8}\gantttitle{\bfseries May}{8}\gantttitle{\bfseries June}{8}\gantttitle{\bfseries July}{8}\gantttitle{\bfseries August}{8}\gantttitle{\bfseries September}{8} \\
-                \ganttgroup{Development}{1}{26}\\
-                \ganttbar{\em Python Implementation}{1}{8} \\
-                \ganttbar{\em C++ Implementation}{9}{26} \\
-                \ganttmilestone{\em Orfeo Toolbox Users Days (CNES)}{11}\\
-                \ganttgroup{Testing}{7}{34}\\
-                \ganttbar{\em Validation Python code}{7}{18}\\
-                \ganttbar{\em Validation C++ code}{25}{34}\\
-                \ganttmilestone{\em Meeting CNES}{31}\\
-                \ganttgroup{Experimentation on real data}{20}{48}\\
-                \ganttbar{\em Experimentation on hyperspectral images}{20}{48}\\
-                \ganttbar{\em Experimentation with heterogeneous features}{32}{48}\\
-                \ganttmilestone{\em Mid-term report}{24}\\
-                \ganttmilestone{\em Final report}{47}
-            \end{ganttchart}}
-        \caption{Gantt diagram of the internship.}
-        \label{gantt}
-    \end{figure}
 
 
 
