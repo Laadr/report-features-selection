@@ -26,6 +26,7 @@
 
 \usepackage{./tikzuml-v1.0-2016-03-29/tikz-uml}
 \usetikzlibrary{positioning}
+\tikzumlset{font=\scriptsize}
 
 \title{Report : Operational Feature Selection in Gaussian Mixture Models}
 
@@ -850,23 +851,70 @@ Two selection algorithms are presented the sequential forward features selection
             \centering
             \begin{tikzpicture}
                 \begin{umlpackage}{otb}
-                    \umlclass[template={\footnotesize{InputType,LabelType}}]{MachineLearningModel}{
-                      n : uint
-                      }{}
+                    \umlclass[template={InType,LabType}, x=4.5]{MachineLearningModel}{
+                        m\_InputListSample : ListSample<InType>*\\
+                        m\_TargetListSample : ListSample<LabType>*
+                    }{
+                        \umlvirt{Train() : void} \\
+                        \umlvirt{Predict() : LabType} \\
+                        \umlvirt{Save() : void} \\
+                        \umlvirt{Load() : void} \\
+                        \umlvirt{CanReadFile() : bool} \\
+                        \umlvirt{CanWriteFile() : bool}
+                    }
                 \end{umlpackage}
 
                 \begin{umlpackage}{otbExternalFastFeaturesSelection}
-                    \umlclass[template={\footnotesize{InputType,LabelType}}, x=10]{GMMMachineLearningModel}{
-                      n : uint \\ t : float
-                    }{}
-                    \umlclass[template={\footnotesize{InputType,LabelType}}, x=10, y=-6]{GMMSelectionMachineLearningModel}{
-                      d : double
+                    \umlclass[template={InType,LabType}, y=-8]{GMMMachineLearningModel}{
+                        m\_ClassNb : unsigned\\
+                        m\_FeatNb : unsigned\\
+                        m\_Proportion : vector<double>\\
+                        m\_NbSpl : vector<unsigned>\\
+                        m\_Means : vector<vnl\_vector>\\
+                        m\_Covariances : vector<vnl\_matrix>\\
+                        m\_Tau : RealType\\
+                        m\_RateGridsearch : vector<RealType>\\
+                        m\_EigenValues : vector<vnl\_vector>\\
+                        m\_Q : vector<vnl\_matrix>\\
+                        m\_LambdaQ : vector<vnl\_matrix>\\
+                        m\_CstDecision : vector<RealType>
                     }{
-                      \umlvirt{setB(b : B) : void} \\ getB() : B}
+                        SetTau() : void\\
+                        TrainTau() : void\\
+                        Decomposition() : void\\
+                        Train() : void\\
+                        Predict() : LabType\\
+                        Save() : void\\
+                        Load() : void\\
+                        CanReadFile() : bool\\
+                        CanWriteFile() : bool
+                    }
+                    \umlclass[template={InType,LabType}, x=8.5, y=-8]{GMMSelectionMachineLearningModel}{
+                        m\_VarNbPrediction : int \\
+                        m\_EnableOptimalSet : bool \\
+                        m\_SelectedVar : vector<int>\\
+                        m\_BestSets : vector<vector<int>> \\
+                        m\_CriterionBestValues : vector<RealType> \\
+                        m\_SubMeans :  vector<vnl\_vector> \\
+                        m\_Logprop : vector<RealType> \\
+                        m\_SubmodelCv : vector<ModelType> \\
+                        m\_Fold : vector<ListSample*>
+                    }{
+                        Selection() : void\\
+                        ForwardSelection() : void\\
+                        FloatingForwardSelection() : void\\
+                        ComputeClassifRate() : void\\
+                        ComputeJM() : void\\
+                        ComputeDivKL() : void\\
+                        Train() : void\\
+                        Predict() : LabType\\
+                        Save() : void\\
+                        Load() : void\\
+                    }
                 \end{umlpackage}
 
-                \umlinherit[geometry=-|]{GMMMachineLearningModel}{MachineLearningModel}
-                \umlinherit[geometry=-|]{GMMSelectionMachineLearningModel}{GMMMachineLearningModel}
+                \umlinherit[geometry=-|,anchor1=10]{GMMMachineLearningModel}{MachineLearningModel}
+                \umlinherit[geometry=|-]{GMMSelectionMachineLearningModel}{GMMMachineLearningModel}
             \end{tikzpicture}
             \caption{UML digram of the developped OTB remote module.\label{fig:uml}}
         \end{figure}
@@ -883,6 +931,7 @@ Two selection algorithms are presented the sequential forward features selection
         \begin{itemize}
             \item 6 variables describing the model: the number of class, the number of features, the proportion of each class in the training set, the number of samples in each class, the mean vectors of each class and finally the covariance matrices of each class;
             \item 1 optional meta-parameter: the regularization value $\tau$ for Ridge regularization;
+            \item 1 variable the result of tau selection;
             \item 4 precomputed terms used for prediction: eigenvalues of covariance matrices, eigenvectors of covariance matrices, 2 other terms.
         \end{itemize}
 
