@@ -1,4 +1,5 @@
 \documentclass[a4paper,11pt,DIV=16]{scrartcl}
+\usepackage{etex}
 \usepackage{ucs}
 \usepackage{array}
 \usepackage[utf8x]{inputenc}
@@ -9,7 +10,6 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{hyperref}\hypersetup{colorlinks=true,hypertexnames=false}
 \usepackage[osf,sc]{mathpazo}
-\usepackage{booktabs}
 \usepackage{graphicx}
 
 \usepackage[usenames,dvipsnames]{xcolor}\definecolor{bg}{rgb}{0.95,0.95,0.95}
@@ -23,6 +23,9 @@
 
 \usepackage{pgfgantt}
 \usepackage{afterpage}
+
+\usepackage{pgfplotstable}
+\usepackage{colortbl}
 
 \usepackage{./tikzuml-v1.0-2016-03-29/tikz-uml}
 \usetikzlibrary{positioning}
@@ -957,15 +960,38 @@ Two selection algorithms are presented the sequential forward features selection
 
         The last application \emph{otbcli\_PredictGMMApp} takes a raster image as input and a model file and perform classification of the image. It generates a classification map in an image file and optionally a confidence map. An other application is available in the OTB to compute classification rate from the image and a groundtruth file.
 
-        \subsection{Code profiling}
-
-        A voir, si je trouve un truc lisible a presenter mais ca serait bien...
-
-
     \section{Experimental results comparison to classical classifiers}
     \label{sec:exp-otb}
 
+        \begin{figure}[!ht]
+            \centering
+            \begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}\hline
+                 & \multicolumn{3}{c|}{\bfseries Training time (s)} & \multicolumn{3}{c|}{\bfseries Classification time (s)} & \multicolumn{3}{c|}{\bfseries Cohen's kappa} \\ \hline
+                \# samples by class & 250 & 500 & 1000 & 250 & 500 & 1000 & 250 & 500 & 1000 \\ \hline
 
+                GMM SFS kappa & 257 & 496 & 955 & 7.7 & 8.6 & 8.7 & 0.684 (0.025) & 0.698 (0.027) & 0.711 (0.028) \\
+                GMM SFS JM &    8.6 & 8.9 & 9.1 & 9.7 & 9.8 & 9.6 & 0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
+                GMM SFFS JM &   8.8 & 9.0 & 9.3 & 9.7 & 9.8 & 9.8 & 0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
+                GMM Ridge &     71.7 & 105 & 167 & 530 & 530 & 530 & 0.611 (0.040) & 0.620 (0.036) & 0.642 (0.034) \\
+                KNN &           8.9 & 19.6 & 59.7 & 387 & 639 & 887 & 0.551 (0.035) & 0.563 (0.033) & 0.574 (0.030) \\
+                Random Forest & 24.5 & 49.3 & 105.1 & 33.0 & 41.7 & 45.9 & 0.645 (0.026) & 0.673 (0.023) & 0.693 (0.023) \\
+
+                \hline
+            \end{tabular}
+            \caption{table}{.\label{tab:aisa-otbsimu}}
+        \end{figure}
+
+    % \begin{table}
+    % \centering
+    %     \begin{tabular}{cccccc}
+    %         \hline
+    %         a & z & e & r & t & y \\
+    %         \pgfplotstabletypeset[dec sep align,
+    %             fixed zerofill,
+    %             precision=3,
+    %             col sep=space]{simu_aisa.csv}
+    %     \end{tabular}
+    % \end{table}
 
     \section{Conclusion}
 
