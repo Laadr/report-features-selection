@@ -108,18 +108,31 @@ Lorem ipsum\ldots
 
 \section{Introduction}
 
-With the increasing number of remote sensing missions, the quantity of data available for a given landscape becomes larger and larger. In particular, the European satellite Sentinel-2 was launched successfully recently and the hyperspectral and hypertemporal data produced by this mission will be fully available at the end of 2016\footnote{\url{https://sentinel2.cnes.fr/en/sentinel-2-0}}. Therefore, data is more and more difficult to process because computational and also statistical limits. Hence, in many remote sensing applications, the extraction of features from a large amount of available data is required.
+With the increasing number of remote sensing missions, the quantity of data available for a given landscape becomes larger and larger. Several missions are at verge of producing huge amount of data or already produced it. The EnMAP (Environmental Mapping and Analysis Program) satellites missioned by the German space agency will produced after 2018 images with 244 spectral bands with resolution of 30x30m with revisit every 4 days\footnote{\url{http://www.enmap.org/}}. The Hyperspectral Infrared Imager (HyspIRI) of NASA will take images with 212 spectral bands every 5 days. In particular, the European satellite Sentinel-2 was launched successfully recently and the hyperspectral and hypertemporal data produced by this mission will be fully available at the end of 2016\footnote{\url{https://sentinel2.cnes.fr/en/sentinel-2-0}}.
 
-For instance, in land-cover classification, given a set of spatial, temporal and spectral features, it is possible to extract those which are the most discriminant for the purpose of classification as explained in \cite{Guyon:2006:FEF:1208773}. In hyperspectral data analysis from the hundreds of available spectral channels, it is possible to reduce the number of channels to make the processing more efficient.
+Therefore, data is more and more difficult to process because computational and also statistical limits. Hence, in many remote sensing applications, the extraction of features from a large amount of available data is required.
 
-There are two ways to reduce dimension: features extraction and feature selection. Feature extraction means creating new features in combining the existing ones, for example linear combination as in Principal Component Analysis \cite{jimenez1998supervised}. To the contrary, features selection select a subset of the existing features which has the advantage to be much more interpretable for the end-user. The selected subset of features corresponds to the most important features for the given task.
+For instance, in land-cover classification, given a set of spatial, temporal and spectral features, it is possible to extract those which are the most discriminant for the purpose of classification. In hyperspectral data analysis from the hundreds of available spectral channels, it is possible to reduce the number of channels to make the processing more efficient.
 
-There is a large diversity of method for feature selection. However, they usually do not scale well with the number of pixels to be processed as shown in \cite{fauvel2015fast}. Nevertheless, methods based on Gaussian Mixture Models (GMM) have several interesting properties described in \cite{webb2003statistical} that make them suitable for feature selection in the context of large amount of data. By taking advantage of their intrinsic properties, it is possible to increase the computational efficiency with respect to standard implementation.
+There are two ways to reduce dimension as explained in \cite{Guyon:2006:FEF:1208773}: features extraction and feature selection. Feature extraction means creating new features by combining the existing ones, for example linear combination as in Principal Component Analysis \cite{jimenez1998supervised}. To the contrary, features selection select a subset of the existing features. It has the advantage to be much more interpretable for the end-user. The selected subset of features corresponds to the most important features for the given task.
+
+There is a large diversity of method for feature selection. However, they usually do not scale well with the number of pixels to be processed as shown in \cite{fauvel2015fast}. Nevertheless, methods based on Gaussian Mixture Models (GMM) have several interesting properties that make them suitable for feature selection in the context of large amount of data. By taking advantage of their intrinsic properties, it is possible to increase the computational efficiency with respect to standard implementation.
 
 The objectives of the internship is to develop and implement a feature selection method based on GMM. The remaining of this mid-term report is organized as follows.
 
 \section{Organization}
 \label{sec:orga}
+
+    \subsection{Laboratory: DYNAFOR}
+
+    The UMR DYNAFOR, created in 2003, depends of the National Institute of Agricultural Research (INRA) and National Polytechnic Institute of Toulouse (INPT). THe lab is specialized in landscape ecology and is composed of 36 permanents employees and 9 PhD students. The lab objective is to assure the sustainable management of forest resources, the biodiversity conservation and to study ecosystem services in rural areas. To reach its goals, the lab is divided in three axes:
+    \begin{itemize}
+        \item RAMSSES (in French: Recherche en Analyse et Modélisation de Systèmes Socio-Ecologiques Spatialisés) focus on remote sensing, geomatics and modelling,
+        \item BIOFOR (Biodiversité des forêts rurales et des milieux semi-naturels dans les paysages) focus on biodiversity, forest areas and fauna,
+        \item SECOTEAM (Services écosystémiques de la biodiversité dans les paysages agricoles) focus on ecosystem services and interactions between agents.
+    \end{itemize}
+
+    The following work is part of the mission of the RAMSSES axis and aims to develop a tool useful for the processing of hyperspectral images which supports the works done by the other axes.
 
     \subsection{Objectives}
 
