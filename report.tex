@@ -1,4 +1,4 @@
-\documentclass[a4paper,11pt,DIV=16]{scrartcl}
+\documentclass[a4paper,11pt,DIV=16,abstracton]{scrartcl}
 \usepackage{etex}
 \usepackage{ucs}
 \usepackage{array}
@@ -94,10 +94,20 @@
 {\color{red}\Large\itshape This document is non-confidential. Thus, it can be broadcast outside in paper or electronic format.}
 \newpage
 
+\noindent\rule{\textwidth}{1pt}
+
 \begin{abstract}
-Lorem ipsum\ldots
+This report presents a forward feature selection algorithm based on Gaussian mixture model (GMM) classifiers. The algorithm selects iteratively features that maximizes a criterion function which can be either a classification rate or a measure of divergence. We explore several variations of this algorithm in changing the criterion function and also in testing a floating forward variation allowing backward step to discard already selected features.
+
+A huge effort is made on implementation to exploit GMM properties to perform fast computing. In particular, update rules of the GMM model are used to compute the criterion function with different sets of features. The result is a C++ remote module for the remote sensing processing toolbox Orfeo developed by CNES.
+
+Finally, the method is tested and also compared to other classifiers using two different datasets. The first dataset is composed of hyperspectral images and the second is composed of heterogenous features computed from the remote sensing images of Potsdam released by ISPRS. The results validate the fact the method perform well in terms of processing time and classification accuracy.\\
+
+{\bfseries Keywords:} remote sensing, hyperspectral imaging, feature selection, gaussian mixture model, fast computing.
 \end{abstract}
-{\bf Keywords:} enter, keyword, here.
+
+\noindent\rule{\textwidth}{1.5pt}
+
 \newpage
 
 \tableofcontents
@@ -106,19 +116,38 @@ Lorem ipsum\ldots
 \listoffigures
 \newpage
 
+\vspace{2cm}
+
 \section{Introduction}
 
-With the increasing number of remote sensing missions, the quantity of data available for a given landscape becomes larger and larger. Several missions are at verge of producing huge amount of data or already produced it. The EnMAP (Environmental Mapping and Analysis Program) satellites missioned by the German space agency will produced after 2018 images with 244 spectral bands with resolution of 30x30m with revisit every 4 days\footnote{\url{http://www.enmap.org/}}. The Hyperspectral Infrared Imager (HyspIRI) of NASA will take images with 212 spectral bands every 5 days. In particular, the European satellite Sentinel-2 was launched successfully recently and the hyperspectral and hypertemporal data produced by this mission will be fully available at the end of 2016\footnote{\url{https://sentinel2.cnes.fr/en/sentinel-2-0}}.
+With the increasing number of remote sensing missions, the quantity of data available for a given landscape becomes larger and larger. Several missions are at verge of producing huge amount of data or already produced it. After 2018, the EnMAP (Environmental Mapping and Analysis Program) satellites missioned by the German space agency will produced images with 244 spectral bands with a resolution of 30x30m and revisit every 4 days\footnote{\url{http://www.enmap.org/}}. The Hyperspectral Infrared Imager (HyspIRI) of NASA will also take images with 212 spectral bands every 5 days and the European satellites Sentinel-2 were launched successfully recently and the hyperspectral and hypertemporal data produced by this mission will be fully available at the end of 2016\footnote{\url{https://sentinel2.cnes.fr/en/sentinel-2-0}}.
 
-Therefore, data is more and more difficult to process because computational and also statistical limits. Hence, in many remote sensing applications, the extraction of features from a large amount of available data is required.
+Therefore, data is more and more difficult to process because computational and also statistical limits. Statistical limits are mainly due to the fast increase of the number of parameters to estimate in order to build a model as discussed in \cite{bouveyron2014model}. The computational issues are multiple. The computing infrastructure needed to process data is more and more expensive because the processing might requires a GPU and a large amount of RAM to load images which can weight a dozen of gigabytes \cite{christophe2011remote}\cite{plaza2011high}. The processing time is also limiting and requires to use parallelize computing (GPU, multi-threading). Hence, in many remote sensing applications, the extraction of features from a large amount of available data is required as assessed \cite{jimenez1998supervised}.
 
-For instance, in land-cover classification, given a set of spatial, temporal and spectral features, it is possible to extract those which are the most discriminant for the purpose of classification. In hyperspectral data analysis from the hundreds of available spectral channels, it is possible to reduce the number of channels to make the processing more efficient.
+For instance, in land-cover classification, given a set of spatial, temporal and spectral features, it is possible to extract those which are the most discriminant for the purpose of classification \cite{fassnacht2014comparison}. In hyperspectral data analysis from the hundreds of available spectral channels, it is possible to reduce the number of channels to make the processing more efficient in terms of statistical complexity because of the reduction of the number of parameters to estimate and thus also in term of computational time. Moreover, dimensional reduction might improves the capacity of generalization of the classifier and avoid overfitting.
 
-There are two ways to reduce dimension as explained in \cite{Guyon:2006:FEF:1208773}: features extraction and feature selection. Feature extraction means creating new features by combining the existing ones, for example linear combination as in Principal Component Analysis \cite{jimenez1998supervised}. To the contrary, features selection select a subset of the existing features. It has the advantage to be much more interpretable for the end-user. The selected subset of features corresponds to the most important features for the given task.
+There are two ways to reduce dimension as explained in \cite{Guyon:2006:FEF:1208773}: features extraction and feature selection. Feature extraction means creating new features by combining the existing ones, for example linear combination as in Principal Component Analysis \cite{jimenez1998supervised}. To the contrary, features selection select a subset of existing features. It has the advantage to be much more interpretable for the end-user. The selected subset of features corresponds to the most important features for the given task.
 
 There is a large diversity of method for feature selection. However, they usually do not scale well with the number of pixels to be processed as shown in \cite{fauvel2015fast}. Nevertheless, methods based on Gaussian Mixture Models (GMM) have several interesting properties that make them suitable for feature selection in the context of large amount of data. By taking advantage of their intrinsic properties, it is possible to increase the computational efficiency with respect to standard implementation.
 
-The objectives of the internship is to develop and implement a feature selection method based on GMM. The remaining of this mid-term report is organized as follows.
+This work proposes to develop a forward feature extraction method using GMM in continuation of \cite{fauvel2015fast} and an upgrade floating forward method. The first method selects iteratively the meaningful features and the second introduces possible backwards steps after each addition of a feature. An efficient implementation of the method is presented in order to handle large amount of data. Moreover, the developed algorithm is made available as a remote module of the C++ Orfeo Toolbox \cite{christophe2008orfeo}. Finally, tests are conducted to compare different variations of the method and to compare also to other classifiers (GMM, Random Forest, k-nearest-neighbor).
+
+The remaining of this report is organized as follows. Section~\ref{sec:hs-img} presents briefly the properties and specificities of hyperspectral images. Then Section~\ref{sec:orga} explains the organization and objectives of the internship. The Gaussian Mixture Model classifiers and several ways to evaluate its performances are described in Section~\ref{sec:classif}. Section~\ref{sec:regularization} introduces the Ridge regularization method which is an alternative to feature selection. The feature selection method at the core of our work ground is presented in Section~\ref{sec:selection} and experimental results of variations of the selection method in Section~\ref{sec:gmm-results}. Finally, Section~\ref{sec:otb-implememtation} and \ref{sec:exp-otb} respectively focus on the implementation of our method in the C++ library Orfeo Toolbox and on the comparison of our classifiers to other classifiers of the toolbox.
+
+\section{Hyperspectral imaging}
+\label{sec:hs-img}
+
+Contrary to conventional images which only have a red, green and blue components, hyperspectral images aims to capture information from across a much larger part of the electromagnetic spectrum. The spectrum is divided in smaller bands of frequencies chosen to cover the most interesting part of the spectrum relatively to the mission. In practice, hyperspectral images are composed of hundreds of bands. For example, the Aisa dataset presented in Section~\ref{sec:gmm-results} is made of 252 bands which means 252 values to described a single pixel. An example of what can be an hyperspectral image is displayed in Figure~\ref{fig:hs-img}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Fig/hsimg.jpg}
+    \caption{Example of hyperspectral image.\label{fig:hs-img}}
+\end{figure}
+
+The advantages of such imaging is to enable the identification of the different materials from their unique spectral responses. Such a process can be useful in numerous applications as agriculture management, oil prospection, pollution control, etc.
+
+Meanwhile, these images possess several drawbacks. First, their acquisition requires specific sensors which are costly and bulky. Secondly, due to the tightness of a specific band, the energy of signal to measure is very small and thus limits the spacial resolution of the image. The sensors uses by the new Sentinel-2 satellites have for example a resolution of 30x30m. And finally, specific algorithms need to be designed in order to handle the dimensionality of the data.
 
 \section{Organization}
 \label{sec:orga}
@@ -179,7 +208,7 @@ The objectives of the internship is to develop and implement a feature selection
     \end{figure}
 
 \section{Features selection with Gaussian Mixture Models}
-\label{sec:theory}
+\label{sec:classif}
 
 In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_i,y_i\}_{i=1}^{n}$ is the training set where $\mathbf{x}_i \in \mathbb{R}^d$ is the vector of features of the $i^{th}$ sample, $y_i = 1,...,C$ the associated label, C the number of labels, $n$ the number of samples and $n_c$ the number of samples of class $c$.
 
@@ -321,7 +350,6 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
         According to \cite{bruzzone2009novel}, it is interesting to notice that the KL divergence increases quadratically with respect to the distance between the mean vectors of the class distributions whereas the measures of good classification we used asymptotically tends to one when distributions are perfectly separable. On the contrary, the JM distance tends to saturate as these measures of good classification.
 
-
 \section{Ridge Regularization}
 \label{sec:regularization}
 
@@ -403,6 +431,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
     As stated before, we choose to implement a basic Ridge regression method and only the small improvement explained herebefore as been proposed. To the contrary, we choose in our study to focus more on a feature selection method named sequential forward features selection described in following section.
 
 \section{Features selection}
+\label{sec:selection}
 
 The objective of feature selection method is to select a subset of variables to describe each sample and so to get rid of high dimensionality and its curse.
 
@@ -735,278 +764,331 @@ Two selection algorithms are presented the sequential forward features selection
         }
         \end{algorithm}
 
-    \section{Experimental results about features selection with GMM}
+\section{Experimental results about features selection with GMM}
+\label{sec:gmm-results}
 
-    In this section, we discuss the results of the features selection method. The forward selection and the floating forward selection are compared and the results with the different criterion function are also discussed. All the experimentation has been conducted with a dataset presented in the next subsection.
+In this section, we discuss the results of the features selection method. The forward selection and the floating forward selection are compared and the results with the different criterion function are also discussed. All the experimentation has been conducted with a dataset presented in the next subsection.
 
-        \subsection{Aisa dataset}
-        The dataset has been acquired by the AISA Eagle sensor during a flight campaign over Heves, Hungary. It contains 252 bands ranging from 395 to 975 nm. 16 classes have been defined for a total of 361,971 referenced pixels. Figure~\ref{fig:aisa} shows one channel of the multispectral image and the shapefile representing groundtruth and Table \ref{tab:aisa} presents the repartition of the various classes.
+    \subsection{Aisa dataset}
+    \label{sec:aisa}
+    The dataset has been acquired by the AISA Eagle sensor during a flight campaign over Heves, Hungary. It contains 252 bands ranging from 395 to 975 nm. 16 classes have been defined for a total of 361,971 referenced pixels. Figure~\ref{fig:aisa} shows one channel of the multispectral image and the shapefile representing groundtruth and Table \ref{tab:aisa} presents the repartition of the various classes.
 
-        \begin{figure}[!ht]
-            \centering
-            \begin{tabular}{cc}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa.png} &
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_gt.png} \\
-                {\bfseries{(a)}} & {\bfseries{(b)}} \\
-            \end{tabular}
-            \caption{Aisa dataset: {\bfseries{(a)}} a single band of the image, {\bfseries{(b)}} groundtruth.\label{fig:aisa}}
-        \end{figure}
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{cc}
+            \includegraphics[width=0.5\textwidth]{Fig/aisa.png} &
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_gt.png} \\
+            {\bfseries{(a)}} & {\bfseries{(b)}} \\
+        \end{tabular}
+        \caption{Aisa dataset: {\bfseries{(a)}} a single band of the image, {\bfseries{(b)}} groundtruth.\label{fig:aisa}}
+    \end{figure}
 
-        \begin{figure}[!ht]
-            \centering
-            \begin{tabular}[b]{lc}\hline
-              Class & Number of samples \\ \hline
-              Winter wheat & 136,524 \\
-              Sunflower & 61,517 \\
-              Green fallow last year treatment & 30,197 \\
-              Alfalfa & 17,626 \\
-              Maize & 18,278 \\
-              Millet & 7,199 \\
-              Broadleaved forest & 10,746 \\
-              Meadow & 23,283 \\
-              Winter barley & 2,799 \\
-              Reed & 4,222 \\
-              Water course & 4,773 \\
-              Rape & 26,566 \\
-              Green fallow with shrub & 9,272 \\
-              Green fallow last year treated & 3,426 \\
-              Pasture & 2,107 \\
-              Oat & 3,436 \\ \hline
-            \end{tabular}
-            \caption{table}{Repartition of classes in Aisa dataset.\label{tab:aisa}}
-        \end{figure}
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}[b]{lc}\hline
+          Class & Number of samples \\ \hline
+          Winter wheat & 136,524 \\
+          Sunflower & 61,517 \\
+          Green fallow last year treatment & 30,197 \\
+          Alfalfa & 17,626 \\
+          Maize & 18,278 \\
+          Millet & 7,199 \\
+          Broadleaved forest & 10,746 \\
+          Meadow & 23,283 \\
+          Winter barley & 2,799 \\
+          Reed & 4,222 \\
+          Water course & 4,773 \\
+          Rape & 26,566 \\
+          Green fallow with shrub & 9,272 \\
+          Green fallow last year treated & 3,426 \\
+          Pasture & 2,107 \\
+          Oat & 3,436 \\ \hline
+        \end{tabular}
+        \caption{table}{Repartition of classes in Aisa dataset.\label{tab:aisa}}
+    \end{figure}
 
-        \subsection{Experimental results}
+    \subsection{Experimental results}
 
-        For the results discussed in this section, the selection process was repeated 20 times with each time a different training set and the classification rate and time processing presented hereafter are the means over these 20 trials.
+    For the results discussed in this section, the selection process was repeated 20 times with each time a different training set and the classification rate and time processing presented hereafter are the means over these 20 trials.
 
-        % discuss evolution of classif rate with nb of selected var
-        Figure~\ref{fig:res-1} corresponds to the evolution of the classification rate expressed with Cohen's kappa in function of the number of selected variables. We observe that at first the classification rate rapidly increase before stabilizing and then slowly decrease. This is the typical behavior expected when using features selection and a GMM classifier and it illustrated the Hughes phenomenon \cite{hughes1968mean} which states that with a given number of samples, prediction accuracy first increases with dimensionality but then decays when the complexity is higher than some optimum value. We want to use the number of variables which maximizes the classification rate even if the maximum is not always easily found for example because of local maxima.
-
-
-        \begin{figure}[!ht]
-            \centering
-            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_JM_fctvarnb.pdf}
-            \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion with 100 samples by class in training set.\label{fig:res-1}}
-        \end{figure}
+    % discuss evolution of classif rate with nb of selected var
+    Figure~\ref{fig:res-1} corresponds to the evolution of the classification rate expressed with Cohen's kappa in function of the number of selected variables. We observe that at first the classification rate rapidly increase before stabilizing and then slowly decrease. This is the typical behavior expected when using features selection and a GMM classifier and it illustrated the Hughes phenomenon \cite{hughes1968mean} which states that with a given number of samples, prediction accuracy first increases with dimensionality but then decays when the complexity is higher than some optimum value. We want to use the number of variables which maximizes the classification rate even if the maximum is not always easily found for example because of local maxima.
 
 
-        % discuss evolution with training set size
-        It is also interesting to confirm the influence of the size of the training set. From Figure~\ref{fig:setsize}, we see that, either with an equalized training set or with a proportional training set, the classification rate is obviously better with more samples and also that the maximum is reached with more selected variables which that more samples allows to evaluate more precisely the relevant variables.
-
-        \begin{figure}[!ht]
-            \centering
-            \begin{tabular}{cc}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_setsize_1.pdf} &
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_setsize_2.pdf}\\
-                {\bfseries{(a)}} & {\bfseries{(b)}} \\
-            \end{tabular}
-            \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion: {\bfseries (a)} with 50, 100, 200 samples by class in training set and {\bfseries (b)} with 0.5\%, 1\%, 2.5\% of dataset in training set keeping proportion.\label{fig:setsize}}
-        \end{figure}
-
-        % discuss sfs vs sffs
-        Using Figure~\ref{fig:sfs-vs-sffs}, we can compare the results when using forward selection or SFFS. And we see that with this particular dataset, the SFFS does not produce better results than the other method. One should be careful not to draw conclusion too fast. It does not mean that the SFFS method has no advantages but rather that the SFFS advantages are highly related to the dataset structure and thus it is always good to check if the basic forward method is sufficient for a given dataset.
-
-        \begin{figure}[!ht]
-            \centering
-            \begin{tabular}{cc}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_fctmethod_1.pdf} &
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_fctmethod_2.pdf} \\
-                {\bfseries{(a)}} & {\bfseries{(b)}} \\
-            \end{tabular}
-            \caption{Classification results with 20 trials : {\bfseries (a)} using Jeffries-Matusita distance as criterion and {\bfseries (b)} using Cohen's kappa as criterion.\label{fig:sfs-vs-sffs}}
-        \end{figure}
-
-        % discuss criterion advantages
-        Now, if we take a closer to the influence of criterion function, we can see from Figure~\ref{fig:res-crit} the results of classification applied to the validation set for each of criterion presented in Section \ref{sec:criterion}. What we expected was that the criterion based on good classification mesure would be better because it would optimize directly the classification rate and maybe more flexible regarding to the Gaussian assumption. But it appears that for this given dataset, as good results are obtained with Jeffries-Matusita distance.
-
-        \begin{figure}[!ht]
-            \centering
-            \begin{tabular}{cc}
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_allcrit_1.pdf} &
-                \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_allcrit_2.pdf} \\
-                {\bfseries{(a)}} & {\bfseries{(b)}} \\
-            \end{tabular}
-            \caption{Classification results with different criterion function with 20 trials : {\bfseries (a)} with a training composed of 100 samples for each class and {\bfseries (b)} with a training set keeping class proportions composed of 1\% of the dataset (=xxxx samples).\label{fig:res-crit}}
-        \end{figure}
-
-        % discuss time processing
-        Finally, if we compare the various method and criterion function in term of computational time, we first notice that the SFFS method takes more time than the forward method which is actually a fact supported by the theoretical ground. It can also be noticed than the processing time for selection do not increase with the number of samples in training set for metrics based on distance between distribution (Kullback–Leibler divergence, Jeffries-Matusita distance) whereas, in the case of good classification criteria, the processing time rapidly increases. All processing time are presented in Figure~\ref{fig:proc-time}.
-
-        \begin{figure}[!ht]
-            \centering
-            \begin{tabular}{cc}
-                \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_kappa.pdf} &
-                \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_accuracy.pdf} \\
-                {\bfseries{(a)}} & {\bfseries{(b)}} \\
-                \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_F1Mean.pdf} &
-                \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_divKL.pdf} \\
-                {\bfseries{(c)}} & {\bfseries{(d)}} \\
-                \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_JM.pdf} & \\
-                {\bfseries{(e)}} & \\
-            \end{tabular}
-            \caption{(Figures temporaires en attente de resultats) Processing time for selection with 20 trials : {\bfseries (a)} using Cohen's kappa, {\bfseries (b)} using overall accuracy, {\bfseries (c)} using mean of F1-scores, {\bfseries (d)} using KL divergence, {\bfseries (e)} using JM distance.\label{fig:proc-time}}
-        \end{figure}
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_JM_fctvarnb.pdf}
+        \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion with 100 samples by class in training set.\label{fig:res-1}}
+    \end{figure}
 
 
+    % discuss evolution with training set size
+    It is also interesting to confirm the influence of the size of the training set. From Figure~\ref{fig:setsize}, we see that, either with an equalized training set or with a proportional training set, the classification rate is obviously better with more samples and also that the maximum is reached with more selected variables which that more samples allows to evaluate more precisely the relevant variables.
 
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{cc}
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_setsize_1.pdf} &
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_setsize_2.pdf}\\
+            {\bfseries{(a)}} & {\bfseries{(b)}} \\
+        \end{tabular}
+        \caption{Classification results averaged on 20 trials using forward selection and Jeffries-Matusita distance as criterion: {\bfseries (a)} with 50, 100, 200 samples by class in training set and {\bfseries (b)} with 0.5\%, 1\%, 2.5\% of dataset in training set keeping proportion.\label{fig:setsize}}
+    \end{figure}
 
-    \section{Implementation of the Orfeo Toolbox module}
+    % discuss sfs vs sffs
+    Using Figure~\ref{fig:sfs-vs-sffs}, we can compare the results when using forward selection or SFFS. And we see that with this particular dataset, the SFFS does not produce better results than the other method. One should be careful not to draw conclusion too fast. It does not mean that the SFFS method has no advantages but rather that the SFFS advantages are highly related to the dataset structure and thus it is always good to check if the basic forward method is sufficient for a given dataset.
 
-    After the calibration of the algorithm with a Python implementation, we aim to realize a C++ implementation of this selection method. And, to make it easily available, we choose to develop a remote module for the Orfeo Toolbox (OTB) designed by the CNES. The current section describes this C++ implementation.
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{cc}
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_fctmethod_1.pdf} &
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_fctmethod_2.pdf} \\
+            {\bfseries{(a)}} & {\bfseries{(b)}} \\
+        \end{tabular}
+        \caption{Classification results with 20 trials : {\bfseries (a)} using Jeffries-Matusita distance as criterion and {\bfseries (b)} using Cohen's kappa as criterion.\label{fig:sfs-vs-sffs}}
+    \end{figure}
 
-        \subsection{Integration in Orfeo Toolbox}
+    % discuss criterion advantages
+    Now, if we take a closer to the influence of criterion function, we can see from Figure~\ref{fig:res-crit} the results of classification applied to the validation set for each of criterion presented in Section \ref{sec:criterion}. What we expected was that the criterion based on good classification mesure would be better because it would optimize directly the classification rate and maybe more flexible regarding to the Gaussian assumption. But it appears that for this given dataset, as good results are obtained with Jeffries-Matusita distance.
 
-        The Orfeo Toolbox is an open-source library for remote sensing image processing. This library allows developers to code external modules and make them available to the community. It is to notice that the toolbox already implements several classifiers inherited mostly from OpenCV. Nevertheless, the GMM classifier currently in place is not robust to high dimensionality (see Section~\ref{sec:exp-otb}) and that's why we choose to implement our own model.
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{cc}
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_allcrit_1.pdf} &
+            \includegraphics[width=0.5\textwidth]{Fig/aisa_trials_20_allcrit_2.pdf} \\
+            {\bfseries{(a)}} & {\bfseries{(b)}} \\
+        \end{tabular}
+        \caption{Classification results with different criterion function with 20 trials : {\bfseries (a)} with a training composed of 100 samples for each class and {\bfseries (b)} with a training set keeping class proportions composed of 1\% of the dataset (=xxxx samples).\label{fig:res-crit}}
+    \end{figure}
 
-        The module we developed is available on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}} and is actually a fork of the template for remote module furnished by OTB developers.
+    % discuss time processing
+    Finally, if we compare the various method and criterion function in term of computational time, we first notice that the SFFS method takes more time than the forward method which is actually a fact supported by the theoretical ground. It can also be noticed than the processing time for selection do not increase with the number of samples in training set for metrics based on distance between distribution (Kullback–Leibler divergence, Jeffries-Matusita distance) whereas, in the case of good classification criteria, the processing time rapidly increases. All processing time are presented in Figure~\ref{fig:proc-time}.
 
-        \subsection{Code structure}
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{cc}
+            \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_kappa.pdf} &
+            \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_accuracy.pdf} \\
+            {\bfseries{(a)}} & {\bfseries{(b)}} \\
+            \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_F1Mean.pdf} &
+            \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_divKL.pdf} \\
+            {\bfseries{(c)}} & {\bfseries{(d)}} \\
+            \includegraphics[width=0.4\textwidth]{Fig/time_aisa_trials_20_JM.pdf} & \\
+            {\bfseries{(e)}} & \\
+        \end{tabular}
+        \caption{(Figures temporaires en attente de resultats) Processing time for selection with 20 trials : {\bfseries (a)} using Cohen's kappa, {\bfseries (b)} using overall accuracy, {\bfseries (c)} using mean of F1-scores, {\bfseries (d)} using KL divergence, {\bfseries (e)} using JM distance.\label{fig:proc-time}}
+    \end{figure}
 
-        \begin{figure}[!ht]
-            \centering
-            \begin{tikzpicture}
-                \begin{umlpackage}{otb}
-                    \umlclass[template={InType,LabType}, x=4.5]{MachineLearningModel}{
-                        m\_InputListSample : ListSample<InType>*\\
-                        m\_TargetListSample : ListSample<LabType>*
-                    }{
-                        \umlvirt{Train() : void} \\
-                        \umlvirt{Predict() : LabType} \\
-                        \umlvirt{Save() : void} \\
-                        \umlvirt{Load() : void} \\
-                        \umlvirt{CanReadFile() : bool} \\
-                        \umlvirt{CanWriteFile() : bool}
-                    }
-                \end{umlpackage}
+\section{Implementation of the Orfeo Toolbox module}
+\label{sec:otb-implememtation}
 
-                \begin{umlpackage}{otbExternalFastFeaturesSelection}
-                    \umlclass[template={InType,LabType}, y=-8]{GMMMachineLearningModel}{
-                        m\_ClassNb : unsigned\\
-                        m\_FeatNb : unsigned\\
-                        m\_Proportion : vector<double>\\
-                        m\_NbSpl : vector<unsigned>\\
-                        m\_Means : vector<vnl\_vector>\\
-                        m\_Covariances : vector<vnl\_matrix>\\
-                        m\_Tau : RealType\\
-                        m\_RateGridsearch : vector<RealType>\\
-                        m\_EigenValues : vector<vnl\_vector>\\
-                        m\_Q : vector<vnl\_matrix>\\
-                        m\_LambdaQ : vector<vnl\_matrix>\\
-                        m\_CstDecision : vector<RealType>
-                    }{
-                        SetTau() : void\\
-                        TrainTau() : void\\
-                        Decomposition() : void\\
-                        Train() : void\\
-                        Predict() : LabType\\
-                        Save() : void\\
-                        Load() : void\\
-                        CanReadFile() : bool\\
-                        CanWriteFile() : bool
-                    }
-                    \umlclass[template={InType,LabType}, x=8.5, y=-8]{GMMSelectionMachineLearningModel}{
-                        m\_VarNbPrediction : int \\
-                        m\_EnableOptimalSet : bool \\
-                        m\_SelectedVar : vector<int>\\
-                        m\_BestSets : vector<vector<int>> \\
-                        m\_CriterionBestValues : vector<RealType> \\
-                        m\_SubMeans :  vector<vnl\_vector> \\
-                        m\_Logprop : vector<RealType> \\
-                        m\_SubmodelCv : vector<ModelType> \\
-                        m\_Fold : vector<ListSample*>
-                    }{
-                        Selection() : void\\
-                        ForwardSelection() : void\\
-                        FloatingForwardSelection() : void\\
-                        ComputeClassifRate() : void\\
-                        ComputeJM() : void\\
-                        ComputeDivKL() : void\\
-                        Train() : void\\
-                        Predict() : LabType\\
-                        Save() : void\\
-                        Load() : void\\
-                    }
-                \end{umlpackage}
+After the calibration of the algorithm with a Python implementation, we aim to realize a C++ implementation of this selection method. And, to make it easily available, we choose to develop a remote module for the Orfeo Toolbox (OTB) designed by the CNES. The current section describes this C++ implementation.
 
-                \umlinherit[geometry=-|,anchor1=10]{GMMMachineLearningModel}{MachineLearningModel}
-                \umlinherit[geometry=|-]{GMMSelectionMachineLearningModel}{GMMMachineLearningModel}
-            \end{tikzpicture}
-            \caption{UML digram of the developped OTB remote module.\label{fig:uml}}
-        \end{figure}
+    \subsection{Integration in Orfeo Toolbox}
 
-        Even if a GMM classifier inherited from Opencv library is already available in the OTB, we choose to implement our own version of a GMM classifier in a class named \emph{GMMMachineLearningModel} in order to assure better performance in term of computational time. The second step is to implement a subclass of the GMM classifier including the features selection method.
+    The Orfeo Toolbox is an open-source library for remote sensing image processing. This library allows developers to code external modules and make them available to the community. It is to notice that the toolbox already implements several classifiers inherited mostly from OpenCV. Nevertheless, the GMM classifier currently in place is not robust to high dimensionality (see Section~\ref{sec:exp-otb}) and that's why we choose to implement our own model.
 
-        The \emph{GMMMachineLearningModel} class inherits from the OTB class \emph{MachineLearningModel} which is a basic class used for all classifier in the OTB. The \emph{MachineLearningModel} class enables the management of a list of samples used for training and also declares the virtual methods inherited: \emph{Train()}, \emph{Predict()}, \emph{Save()}, \emph{Load()}, \emph{CanReadFile()}, \emph{CanWriteFile()}.
+    The module we developed is available on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}} and is actually a fork of the template for remote module furnished by OTB developers.
 
-        The \emph{GMMMachineLearningModel} class implements all these virtual methods. The \emph{Train()} aims to train the classifier using a list of samples set as a member of the class. Then, it is possible to use the method \emph{Predict()} to classify a sample and optional get the confidence in the prediction. The methods \emph{Save()} and \emph{Load()} obviously are used to save and load a trained model. And, finally, \emph{CanReadFile()} and \emph{CanWriteFile()} state the validity of a GMM model file.
+    \subsection{Code structure}
 
-        In addition to these inherited methods, two noticeable methods are implemented. The \emph{Decomposition()} method perform a decomposition of a symmetric matrix in eigenvalues and eigenvectors using a function of the VNL library. It is to notice that this method check the value of the extracted eigenvalues and minor them to EPSILON\_FLT (or EPSILON\_DBL) which corresponds to computational precision.  The idea is to limit computational errors when parameters are ill-estimated due to an insufficient amount of training samples. The second interesting method is \emph{TrainTau()} which concerns the Ridge regularization. Given a set of possible regularization constant $\tau$, this method selects the most efficient value in estimating classification rate with cross-validation.
+    \begin{figure}[!ht]
+        \centering
+        \begin{tikzpicture}
+            \begin{umlpackage}{otb}
+                \umlclass[template={InType,LabType}, x=4.5]{MachineLearningModel}{
+                    m\_InputListSample : ListSample<InType>*\\
+                    m\_TargetListSample : ListSample<LabType>*
+                }{
+                    \umlvirt{Train() : void} \\
+                    \umlvirt{Predict() : LabType} \\
+                    \umlvirt{Save() : void} \\
+                    \umlvirt{Load() : void} \\
+                    \umlvirt{CanReadFile() : bool} \\
+                    \umlvirt{CanWriteFile() : bool}
+                }
+            \end{umlpackage}
 
-        In term of members, the \emph{GMMMachineLearningModel} includes:
-        \begin{itemize}
-            \item 6 variables describing the model: the number of class, the number of features, the proportion of each class in the training set, the number of samples in each class, the mean vectors of each class and finally the covariance matrices of each class;
-            \item 1 optional meta-parameter: the regularization value $\tau$ for Ridge regularization;
-            \item 1 variable the result of tau selection;
-            \item 4 precomputed terms used for prediction: eigenvalues of covariance matrices, eigenvectors of covariance matrices, 2 other terms.
-        \end{itemize}
+            \begin{umlpackage}{otbExternalFastFeaturesSelection}
+                \umlclass[template={InType,LabType}, y=-8]{GMMMachineLearningModel}{
+                    m\_ClassNb : unsigned\\
+                    m\_FeatNb : unsigned\\
+                    m\_Proportion : vector<double>\\
+                    m\_NbSpl : vector<unsigned>\\
+                    m\_Means : vector<vnl\_vector>\\
+                    m\_Covariances : vector<vnl\_matrix>\\
+                    m\_Tau : RealType\\
+                    m\_RateGridsearch : vector<RealType>\\
+                    m\_EigenValues : vector<vnl\_vector>\\
+                    m\_Q : vector<vnl\_matrix>\\
+                    m\_LambdaQ : vector<vnl\_matrix>\\
+                    m\_CstDecision : vector<RealType>
+                }{
+                    SetTau() : void\\
+                    TrainTau() : void\\
+                    Decomposition() : void\\
+                    Train() : void\\
+                    Predict() : LabType\\
+                    Save() : void\\
+                    Load() : void\\
+                    CanReadFile() : bool\\
+                    CanWriteFile() : bool
+                }
+                \umlclass[template={InType,LabType}, x=8.5, y=-8]{GMMSelectionMachineLearningModel}{
+                    m\_VarNbPrediction : int \\
+                    m\_EnableOptimalSet : bool \\
+                    m\_SelectedVar : vector<int>\\
+                    m\_BestSets : vector<vector<int>> \\
+                    m\_CriterionBestValues : vector<RealType> \\
+                    m\_SubMeans :  vector<vnl\_vector> \\
+                    m\_Logprop : vector<RealType> \\
+                    m\_SubmodelCv : vector<ModelType> \\
+                    m\_Fold : vector<ListSample*>
+                }{
+                    Selection() : void\\
+                    ForwardSelection() : void\\
+                    FloatingForwardSelection() : void\\
+                    ComputeClassifRate() : void\\
+                    ComputeJM() : void\\
+                    ComputeDivKL() : void\\
+                    Train() : void\\
+                    Predict() : LabType\\
+                    Save() : void\\
+                    Load() : void\\
+                }
+            \end{umlpackage}
 
-        To implement the selection algorithm, a new class \emph{GMMSelectionMachineLearningModel} inheriting from \emph{GMMMachineLearningModel} is defined. This class keeps the same six methods inherited from \emph{MachineLearningModel} but reimplements \emph{Predict()} to predict with a reduced set of features and  \emph{Save()}/\emph{Load()} to use a second file to handle the results of the selection.
+            \umlinherit[geometry=-|,anchor1=10]{GMMMachineLearningModel}{MachineLearningModel}
+            \umlinherit[geometry=|-]{GMMSelectionMachineLearningModel}{GMMMachineLearningModel}
+        \end{tikzpicture}
+        \caption{UML digram of OTB remote module.\label{fig:uml}}
+    \end{figure}
 
-        The other methods available in class \emph{GMMSelectionMachineLearningModel} are used to perform the selection algorithms presented in Section \ref{sec:theory}. The method \emph{Selection()} aims to set the various parameter of the selection and then calls either the \emph{ForwardSelection()} method to use forward feature selection or the \emph{FloatingForwardSelection()} method to use SFFS. Then, 3 different methods are used to evaluate criterion functions during selection. Given a pool of variables available for selection, these functions evaluate the criterion functions for all the possible augmented set. The \emph{ComputeJM()} method is used for Jeffries-Matusita distance, \emph{ComputeDivKL()} for Kullback–Leibler divergence and \emph{ComputeClassifRate()} for the three good classification criteria. It is to notice that the good classification criteria are evaluated using cross-validation.
+    Even if a GMM classifier inherited from Opencv library is already available in the OTB, we choose to implement our own version of a GMM classifier in a class named \emph{GMMMachineLearningModel} in order to assure better performance in term of computational time. The second step is to implement a subclass of the GMM classifier including the features selection method.
 
-        Several new members are defined in the \emph{GMMSelectionMachineLearningModel} class:
-        \begin{itemize}
-            \item 2 meta-parameters: one to specify the number of variables to use for prediction and one to enable the process to automatically set the previous meta-parameter to the number maximizing the criterion function;
-            \item 3 variables describing the results of selection: the set to use for prediction, the evolution of criterion function at each iteration and the best sets for each iteration;
-            \item 2 variables used for cross-validation: the set of submodels and the folds of samples;
-            \item 2 precomputed terms used for prediction.
-        \end{itemize}
+    The \emph{GMMMachineLearningModel} class inherits from the OTB class \emph{MachineLearningModel} which is a basic class used for all classifier in the OTB. The \emph{MachineLearningModel} class enables the management of a list of samples used for training and also declares the virtual methods inherited: \emph{Train()}, \emph{Predict()}, \emph{Save()}, \emph{Load()}, \emph{CanReadFile()}, \emph{CanWriteFile()}.
 
-        All the code structure is summarized in the UML diagram displayed in Figure~\ref{fig:uml}.
+    The \emph{GMMMachineLearningModel} class implements all these virtual methods. The \emph{Train()} aims to train the classifier using a list of samples set as a member of the class. Then, it is possible to use the method \emph{Predict()} to classify a sample and optional get the confidence in the prediction. The methods \emph{Save()} and \emph{Load()} obviously are used to save and load a trained model. And, finally, \emph{CanReadFile()} and \emph{CanWriteFile()} state the validity of a GMM model file.
 
-        \subsection{Applications}
+    In addition to these inherited methods, two noticeable methods are implemented. The \emph{Decomposition()} method perform a decomposition of a symmetric matrix in eigenvalues and eigenvectors using a function of the VNL library. It is to notice that this method check the value of the extracted eigenvalues and minor them to EPSILON\_FLT (or EPSILON\_DBL) which corresponds to computational precision.  The idea is to limit computational errors when parameters are ill-estimated due to an insufficient amount of training samples. The second interesting method is \emph{TrainTau()} which concerns the Ridge regularization. Given a set of possible regularization constant $\tau$, this method selects the most efficient value in estimating classification rate with cross-validation.
 
-        In order to provide an easy way to use the developed algorithm, we finally develop OTB application. These application allows the user to use and parametrize the algorithm from command line. Three applications are built.
+    In term of members, the \emph{GMMMachineLearningModel} includes:
+    \begin{itemize}
+        \item 6 variables describing the model: the number of class, the number of features, the proportion of each class in the training set, the number of samples in each class, the mean vectors of each class and finally the covariance matrices of each class;
+        \item 1 optional meta-parameter: the regularization value $\tau$ for Ridge regularization;
+        \item 1 variable the result of tau selection;
+        \item 4 precomputed terms used for prediction: eigenvalues of covariance matrices, eigenvectors of covariance matrices, 2 other terms.
+    \end{itemize}
 
-        The application \emph{otbcli\_TrainGMMApp} create and train a model from class \emph{GMMMachineLearningModel} and the application \emph{otbcli\_TrainGMMSelectionApp} same for a model of class \emph{GMMSelectionMachineLearningModel}. These two applications use a raster image and shapefile with groundtruth as input and create a model file.
+    To implement the selection algorithm, a new class \emph{GMMSelectionMachineLearningModel} inheriting from \emph{GMMMachineLearningModel} is defined. This class keeps the same six methods inherited from \emph{MachineLearningModel} but reimplements \emph{Predict()} to predict with a reduced set of features and  \emph{Save()}/\emph{Load()} to use a second file to handle the results of the selection.
 
-        The last application \emph{otbcli\_PredictGMMApp} takes a raster image as input and a model file and perform classification of the image. It generates a classification map in an image file and optionally a confidence map. An other application is available in the OTB to compute classification rate from the image and a groundtruth file.
+    The other methods available in class \emph{GMMSelectionMachineLearningModel} are used to perform the selection algorithms presented in Section \ref{sec:classif}. The method \emph{Selection()} aims to set the various parameter of the selection and then calls either the \emph{ForwardSelection()} method to use forward feature selection or the \emph{FloatingForwardSelection()} method to use SFFS. Then, 3 different methods are used to evaluate criterion functions during selection. Given a pool of variables available for selection, these functions evaluate the criterion functions for all the possible augmented set. The \emph{ComputeJM()} method is used for Jeffries-Matusita distance, \emph{ComputeDivKL()} for Kullback–Leibler divergence and \emph{ComputeClassifRate()} for the three good classification criteria. It is to notice that the good classification criteria are evaluated using cross-validation.
 
-    \section{Experimental results comparison to classical classifiers}
-    \label{sec:exp-otb}
+    Several new members are defined in the \emph{GMMSelectionMachineLearningModel} class:
+    \begin{itemize}
+        \item 2 meta-parameters: one to specify the number of variables to use for prediction and one to enable the process to automatically set the previous meta-parameter to the number maximizing the criterion function;
+        \item 3 variables describing the results of selection: the set to use for prediction, the evolution of criterion function at each iteration and the best sets for each iteration;
+        \item 2 variables used for cross-validation: the set of submodels and the folds of samples;
+        \item 2 precomputed terms used for prediction.
+    \end{itemize}
 
-        \begin{figure}[!ht]
-            \centering
-            \begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}\hline
-                 & \multicolumn{3}{c|}{\bfseries Training time (s)} & \multicolumn{3}{c|}{\bfseries Classification time (s)} & \multicolumn{3}{c|}{\bfseries Cohen's kappa} \\ \hline
-                \# samples by class & 250 & 500 & 1000 & 250 & 500 & 1000 & 250 & 500 & 1000 \\ \hline
+    All the code structure is summarized in the UML diagram displayed in Figure~\ref{fig:uml}.
 
-                GMM SFS kappa & 257 & 496 & 955 & 7.7 & 8.6 & 8.7 & 0.684 (0.025) & 0.698 (0.027) & 0.711 (0.028) \\
-                GMM SFS JM &    8.6 & 8.9 & 9.1 & 9.7 & 9.8 & 9.6 & 0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
-                GMM SFFS JM &   8.8 & 9.0 & 9.3 & 9.7 & 9.8 & 9.8 & 0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
-                GMM Ridge &     71.7 & 105 & 167 & 530 & 530 & 530 & 0.611 (0.040) & 0.620 (0.036) & 0.642 (0.034) \\
-                KNN &           8.9 & 19.6 & 59.7 & 387 & 639 & 887 & 0.551 (0.035) & 0.563 (0.033) & 0.574 (0.030) \\
-                Random Forest & 24.5 & 49.3 & 105.1 & 33.0 & 41.7 & 45.9 & 0.645 (0.026) & 0.673 (0.023) & 0.693 (0.023) \\
+    \subsection{Applications}
 
-                \hline
-            \end{tabular}
-            \caption{table}{.\label{tab:aisa-otbsimu}}
-        \end{figure}
+    In order to provide an easy way to use the developed algorithm, we finally develop OTB application. These application allows the user to use and parametrize the algorithm from command line. Three applications are built.
 
-    % \begin{table}
-    % \centering
-    %     \begin{tabular}{cccccc}
-    %         \hline
-    %         a & z & e & r & t & y \\
-    %         \pgfplotstabletypeset[dec sep align,
-    %             fixed zerofill,
-    %             precision=3,
-    %             col sep=space]{simu_aisa.csv}
-    %     \end{tabular}
-    % \end{table}
+    The application \emph{otbcli\_TrainGMMApp} create and train a model from class \emph{GMMMachineLearningModel} and the application \emph{otbcli\_TrainGMMSelectionApp} same for a model of class \emph{GMMSelectionMachineLearningModel}. These two applications use a raster image and shapefile with groundtruth as input and create a model file.
 
-    \section{Conclusion}
+    The last application \emph{otbcli\_PredictGMMApp} takes a raster image as input and a model file and perform classification of the image. It generates a classification map in an image file and optionally a confidence map. An other application is available in the OTB to compute classification rate from the image and a groundtruth file.
+
+\section{Experimental results comparison to classical classifiers}
+\label{sec:exp-otb}
+
+    \subsection{Aisa dataset}
+
+    We use the Aisa dataset described in Section~\ref{sec:aisa} to compare performances of our classifiers to standard classifiers. The tests are conducted using OTB commandline applications.
+
+    We test 4 variations of our algorithm: one with Ridge regularization with selection of the regularization constant (GMM Ridge), one with forward selection and JM distance as criterion (GMM SFS JM), one with forward selection and kappa as criterion (GMM SFS kappa) and one with floating forward selection and JM distance as criterion (GMM SFFS JM). We compare these classifiers to 3 OTB classifiers: the k-nearest-neighbors classifiers (KNN) with OTB default parameters, the Random Forest classifier with parameters optimized by gridsearch (200 trees, 40 max depth, 50 size of subset of variables) and the GMM classifier of OpenCV.
+
+    When creating training and validation sets, we take special care to assure that training samples are picked in distinct areas than test samples (distinct polygons of our shapefile). Moreover 20 trials are run each time with a different training set (different polygons). Table~\ref{tab:aisa-otbsimu} presents the results of the experiment with mean and standard deviation over the 20 trials.
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{|l|c|c|c|}\hline
+             & \multicolumn{3}{c|}{\bfseries Cohen's kappa} \\ \hline
+            \# samples by class & 250 & 500 & 1000 \\ \hline
+
+            GMM SFS kappa & 0.684 (0.025) & 0.698 (0.027) & 0.711 (0.028) \\
+            GMM SFS JM &    0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
+            GMM SFFS JM &   0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
+            GMM Ridge &     0.611 (0.040) & 0.620 (0.036) & 0.642 (0.034) \\
+            KNN &           0.551 (0.035) & 0.563 (0.033) & 0.574 (0.030) \\
+            Random Forest & 0.645 (0.026) & 0.673 (0.023) & 0.693 (0.023) \\
+
+            \hline
+        \end{tabular}
+        \caption{Results of classification with sampling on separate polygons and 20 trials (standard deviation in parenthesis).\label{tab:aisa-otbsimu}}
+    \end{figure}
+
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{|l|c|c|c|c|c|c|}\hline
+             & \multicolumn{3}{c|}{\bfseries Training time (s)} & \multicolumn{3}{c|}{\bfseries Classification time (s)} \\ \hline
+            \# samples by class & 250 & 500 & 1000 & 250 & 500 & 1000 \\ \hline
+
+            GMM SFS kappa & 257 & 496 & 955 & 7.7 & 8.6 & 8.7 \\
+            GMM SFS JM &    8.6 & 8.9 & 9.1 & 9.7 & 9.8 & 9.6 \\
+            GMM SFFS JM &   8.8 & 9.0 & 9.3 & 9.7 & 9.8 & 9.8 \\
+            GMM Ridge &     71.7 & 105 & 167 & 530 & 530 & 530 \\
+            KNN &           8.9 & 19.6 & 59.7 & 387 & 639 & 887 \\
+            Random Forest & 24.5 & 49.3 & 105 & 33.0 & 41.7 & 45.9 \\
+
+            \hline
+        \end{tabular}
+        \caption{Mean time for training and classification for results of Table \ref{tab:aisa-otbsimu}.\label{tab:aisa-otbsimu-time}}
+    \end{figure}
+
+    As we expected, the OpenCv GMM classifier was not able to handle the high dimensionality and simply classify all samples in the same class. Nevertheless, to compare with it, the dimension was reduced from 252 bands to 100 bands with a PCA. Table~\ref{tab:aisa-otbsimu-reduced} and \ref{tab:aisa-otbsimu-time-reduced} presents the results obtained with this reduced dataset.
+
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{|l|c|c|c|}\hline
+             & \multicolumn{3}{c|}{\bfseries Cohen's kappa} \\ \hline
+            \# samples by class & 250 & 500 & 1000 \\ \hline
+
+            GMM SFS kappa & 0.684 (0.025) & 0.698 (0.027) & 0.711 (0.028) \\
+            GMM SFS JM &    0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
+            GMM SFFS JM &   0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
+            GMM Ridge &     0.611 (0.040) & 0.620 (0.036) & 0.642 (0.034) \\
+            KNN &           0.551 (0.035) & 0.563 (0.033) & 0.574 (0.030) \\
+            Random Forest & 0.645 (0.026) & 0.673 (0.023) & 0.693 (0.023) \\
+
+            \hline
+        \end{tabular}
+        \caption{Results of classification with sampling on separate polygons and 20 trials (standard deviation in parenthesis).\label{tab:aisa-otbsimu-reduced}}
+    \end{figure}
+
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{|l|c|c|c|c|c|c|}\hline
+             & \multicolumn{3}{c|}{\bfseries Training time (s)} & \multicolumn{3}{c|}{\bfseries Classification time (s)} \\ \hline
+            \# samples by class & 250 & 500 & 1000 & 250 & 500 & 1000 \\ \hline
+
+            GMM SFS kappa & 257 & 496 & 955 & 7.7 & 8.6 & 8.7  \\
+            GMM SFS JM &    8.6 & 8.9 & 9.1 & 9.7 & 9.8 & 9.6  \\
+            GMM SFFS JM &   8.8 & 9.0 & 9.3 & 9.7 & 9.8 & 9.8  \\
+            GMM Ridge &     71.7 & 105 & 167 & 530 & 530 & 530  \\
+            KNN &           8.9 & 19.6 & 59.7 & 387 & 639 & 887  \\
+            Random Forest & 24.5 & 49.3 & 105 & 33.0 & 41.7 & 45.9  \\
+
+            \hline
+        \end{tabular}
+        \caption{Mean time for training and classification for results of Table \ref{tab:aisa-otbsimu}.\label{tab:aisa-otbsimu-time-reduced}}
+    \end{figure}
+
+    \subsection{Potsdam dataset}
+
+\section{Conclusion}
 
 
 
