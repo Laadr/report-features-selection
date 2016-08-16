@@ -1007,9 +1007,10 @@ After the calibration of the algorithm with a Python implementation, we aim to r
 
     We use the Aisa dataset described in Section~\ref{sec:aisa} to compare performances of our classifiers to standard classifiers. The tests are conducted using OTB commandline applications.
 
-    We test 4 variations of our algorithm: one with Ridge regularization with selection of the regularization constant (GMM Ridge), one with forward selection and JM distance as criterion (GMM SFS JM), one with forward selection and kappa as criterion (GMM SFS kappa) and one with floating forward selection and JM distance as criterion (GMM SFFS JM). We compare these classifiers to 3 OTB classifiers: the k-nearest-neighbors classifiers (KNN) with OTB default parameters, the Random Forest classifier with parameters optimized by gridsearch (200 trees, 40 max depth, 50 size of subset of variables) and the GMM classifier of OpenCV.
+    We test 4 variations of our algorithm: one with Ridge regularization and selection of the regularization constant (GMM Ridge), one with forward selection and JM distance as criterion (GMM SFS JM), one with forward selection and Cohen's kappa as criterion (GMM SFS kappa) and one with floating forward selection and JM distance as criterion (GMM SFFS JM). We compare these classifiers to 3 OTB classifiers: the k-nearest-neighbors classifiers (KNN) with OTB default parameters, the Random Forest classifier with parameters optimized by gridsearch (200 trees, 40 max depth, 50 size of subset of variables) and the GMM classifier of OpenCV.
 
-    When creating training and validation sets, we take special care to assure that training samples are picked in distinct areas than test samples (distinct polygons of our shapefile). Moreover 20 trials are run each time with a different training set (different polygons). Table~\ref{tab:aisa-otbsimu} presents the results of the experiment with mean and standard deviation over the 20 trials.
+    When creating training and validation sets, we take special care to assure that training samples are picked in distinct areas than test samples (distinct polygons of our shapefile). Moreover 20 trials are run each time with a different training set (different polygons). Figure~\ref{tab:aisa-otbsimu} presents the results of the experiment with mean and standard deviation over the 20 trials and Figure~\ref{tab:aisa-otbsimu-time} the corresponding processing time.
+
     \begin{figure}[!ht]
         \centering
         \begin{tabular}{|l|c|c|c|}\hline
@@ -1043,10 +1044,16 @@ After the calibration of the algorithm with a Python implementation, we aim to r
 
             \hline
         \end{tabular}
-        \caption{Mean time for training and classification for results of Table \ref{tab:aisa-otbsimu}.\label{tab:aisa-otbsimu-time}}
+        \caption{Mean time for training and classification for results of Figure \ref{tab:aisa-otbsimu}.\label{tab:aisa-otbsimu-time}}
     \end{figure}
 
-    As we expected, the OpenCv GMM classifier was not able to handle the high dimensionality and simply classify all samples in the same class. Nevertheless, to compare with it, the dimension was reduced from 252 bands to 100 bands with a PCA. Table~\ref{tab:aisa-otbsimu-reduced} and \ref{tab:aisa-otbsimu-time-reduced} presents the results obtained with this reduced dataset.
+    The results shows that, on this dataset, GMM classifiers with selection get the best classification rate followed by Random Forest. Especially with very few training samples, our algorithm seems to outperform the others. With more samples, Random Forest becomes more competitive with GMM classifiers.
+
+    In term of computational time, the GMM classifiers are as we expected very fast for classification and also for training if the criterion function is not a classification rate. The computation of the kappa seems to suffer from a lack of parallelization which could be improved.
+
+    As we expected, the OpenCv GMM classifier was not able to handle the high dimensionality and simply classify all samples in the same class. Nevertheless, to compare with it, the dimension was reduced from 252 bands to 100 bands with a PCA. Figure~\ref{tab:aisa-otbsimu-reduced} and \ref{tab:aisa-otbsimu-time-reduced} presents the results obtained with this reduced dataset.
+
+    Three algorithms are tested with this reduced set: the GMM classifier of OpenCV library (GMM OpenCV), the GMM classifier we developed (GMM) and a GMM classifier with a sequential forward selection and Jeffries-Matusita distance as criterion (GMM SFS JM). As expected, there is no difference between our GMM classifier and OpenCV GMM classifier except that OpenCV classifier is faster for classification. We can also noticed that the GMM classifier with selection gets better results and classify faster for the very small cost of time during training.
 
     \begin{figure}[!ht]
         \centering
@@ -1054,16 +1061,13 @@ After the calibration of the algorithm with a Python implementation, we aim to r
              & \multicolumn{3}{c|}{\bfseries Cohen's kappa} \\ \hline
             \# samples by class & 250 & 500 & 1000 \\ \hline
 
-            GMM SFS kappa & 0.684 (0.025) & 0.698 (0.027) & 0.711 (0.028) \\
-            GMM SFS JM &    0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
-            GMM SFFS JM &   0.680 (0.028) & 0.700 (0.028) & 0.710 (0.030) \\
-            GMM Ridge &     0.611 (0.040) & 0.620 (0.036) & 0.642 (0.034) \\
-            KNN &           0.551 (0.035) & 0.563 (0.033) & 0.574 (0.030) \\
-            Random Forest & 0.645 (0.026) & 0.673 (0.023) & 0.693 (0.023) \\
+            GMM OpenCV & 0.531 (0.034) & 0.635 (0.024) & 0.680 (0.025) \\
+            GMM        & 0.530 (0.034) & 0.634 (0.024) & 0.680 (0.025) \\
+            GMM SFS JM & 0.692 (0.028) & 0.704 (0.030) & 0.711 (0.032) \\
 
             \hline
         \end{tabular}
-        \caption{Results of classification with sampling on separate polygons and 20 trials (standard deviation in parenthesis).\label{tab:aisa-otbsimu-reduced}}
+        \caption{Results of classification with a reduced set of 100 features obtained by PCA and with sampling on separate polygons and 20 trials (standard deviation in parenthesis).\label{tab:aisa-otbsimu-reduced}}
     \end{figure}
 
     \begin{figure}[!ht]
@@ -1072,19 +1076,44 @@ After the calibration of the algorithm with a Python implementation, we aim to r
              & \multicolumn{3}{c|}{\bfseries Training time (s)} & \multicolumn{3}{c|}{\bfseries Classification time (s)} \\ \hline
             \# samples by class & 250 & 500 & 1000 & 250 & 500 & 1000 \\ \hline
 
-            GMM SFS kappa & 257 & 496 & 955 & 7.7 & 8.6 & 8.7  \\
-            GMM SFS JM &    8.6 & 8.9 & 9.1 & 9.7 & 9.8 & 9.6  \\
-            GMM SFFS JM &   8.8 & 9.0 & 9.3 & 9.7 & 9.8 & 9.8  \\
-            GMM Ridge &     71.7 & 105 & 167 & 530 & 530 & 530  \\
-            KNN &           8.9 & 19.6 & 59.7 & 387 & 639 & 887  \\
-            Random Forest & 24.5 & 49.3 & 105 & 33.0 & 41.7 & 45.9  \\
+            GMM OpenCV & 5.6 & 5.9 & 6.5 & 34.3 & 34.2 & 34.2 \\
+            GMM        & 5.3 & 5.9 & 7.0 & 58.4 & 58.5 & 58.5 \\
+            GMM SFS JM & 6.3 & 6.3 & 6.6 & 7.7  & 7.7  & 7.7 \\
 
             \hline
         \end{tabular}
-        \caption{Mean time for training and classification for results of Table \ref{tab:aisa-otbsimu}.\label{tab:aisa-otbsimu-time-reduced}}
+        \caption{Mean time for training and classification for results of Figure \ref{tab:aisa-otbsimu-reduced}.\label{tab:aisa-otbsimu-time-reduced}}
     \end{figure}
 
+    Classification images of the first trial are available in Appendix~\ref{app:classif-aisa}.
+
     \subsection{Potsdam dataset}
+
+    This new dataset is built from a dataset of remote sensing images distributed by the International Society for Photogrammetry and Remote Sensing (ISPRS)\footnote{\url{http://www2.isprs.org/commissions/comm3/wg4/2d-sem-label-potsdam.html}}. The dataset is composed of aerial images of the urban area of Potsdam. The area is cut into 38 patches of 6000x6000 pixels with a resolution of 5cm by pixel and 4 channels are available: Red, Blue, Green and Infrared (RGBIR). A Digital Surface Model with same resolution is also furnished. The groundtruth for 24 tiles are provided with 6 classes: Low vegetation, High vegetation, Impervious surfaces, Buildings, Cars, Clutter. Figure~\ref{fig:potsdam-dataset} shows the complete area and Figure~\ref{fig:potsdam-expl} a particular patch.
+
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[width=0.7\textwidth]{Fig/potsdam_full.png}
+        \caption{Full Potsdam dataset.\label{fig:potsdam-dataset}}
+    \end{figure}
+
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[width=0.8\textwidth]{Fig/potsdam_imgexpl.png}
+        \caption{Example of patch with {\bfseries{(a)}} orthophoto, {\bfseries{(b)}} DSM and {\bfseries{(c)}} groundtruth.\label{fig:potsdam-expl}}
+    \end{figure}
+
+    In our experiment, we compute the following features using the RGBIR images:
+    \begin{itemize}
+        \item 15 radiometric indexes: NDVI, TNDVI, RVI, SAVI, TSAVI, MSAVI, MSAVI2, GEMI, IPVI, NDWI2, NDTI, RI, CI, BI, BI2 (see \footnote{\url{https://www.orfeo-toolbox.org//Applications/RadiometricIndices.html}});
+        \item morphological profile with reconstruction of each band with a disk of radius 5, 9, 13, 17 and 21 (40 features);
+        \item attribute profile of each band with area as attribute and 1000, 2000, 5000, 10000 and 15000 as thresholds (40 features);
+        \item attribute profile of each band with diagonal of bounding box as attribute and 100, 200, 500, 1000 and 20000 as thresholds (40 features);
+        \item textural features with neighborhood of 19x19 pixels: mean, standard deviation, range and entropy (16 features).
+    \end{itemize}
+    These 151 features are then stacked to create a new image with 151 bands.
+
+    The training is made with tile 5\_11 and we test with tiles 3\_10, 5\_12 and 7\_8.
 
 \section{Conclusion}
 
@@ -1153,6 +1182,34 @@ After the calibration of the algorithm with a Python implementation, we aim to r
             \fbox{$\boldsymbol{\Sigma}_c^{n_c-\nu_c} = \frac{1}{n_c-\nu_c-1} ( (n_c-1) \boldsymbol{\Sigma}_c^{n_c} - (\nu_c-1) \boldsymbol{\Sigma}_c^{\nu_c} - \frac{n_c \nu_c}{(n_c-\nu_c)} (\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})(\boldsymbol{\mu}_c^{\nu_c}-\boldsymbol{\mu}_c^{n_c})^t$ )}
         \end{equation}
 
+
+\section{Classification results}
+
+    \subsection{Aisa dataset classification}
+    \label{app:classif-aisa}
+
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{ccc}
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_gt.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_gt_train.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_gt_test.png} \\
+            {\bfseries{(a)}} & {\bfseries{(b)}} & {\bfseries{(c)}} \\
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_sfs_kappa.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_sfs_jm.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_sffs_jm.png} \\
+            {\bfseries{(d)}} & {\bfseries{(e)}} & {\bfseries{(f)}} \\
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_ridge.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_knn.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_rf.png} \\
+            {\bfseries{(g)}} & {\bfseries{(h)}} & {\bfseries{(i)}} \\
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_ocv_red.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_gmm_red.png} &
+            \includegraphics[width=0.32\textwidth]{Fig/aisa_sfs_jm_red.png} \\
+            {\bfseries{(j)}} & {\bfseries{(k)}} & {\bfseries{(l)}} \\
+        \end{tabular}
+        \caption{Aisa classification results: {\bfseries{(a)}} groundtruth, {\bfseries{(b)}} training polygons, {\bfseries{(c)}} test polygons, {\bfseries{(d)}} GMM SFS kappa, {\bfseries{(e)}} GMM SFS JM, {\bfseries{(f)}} GMM SFFS JM, {\bfseries{(g)}} GMM Ridge, {\bfseries{(h)}} KNN, {\bfseries{(i)}} Random Forest, {\bfseries{(j)}} GMM OpenCV (reduced features), {\bfseries{(k)}} GMM (reduced features), {\bfseries{(l)}} GMM SFS JM (reduced features).}
+    \end{figure}
 
 \bibliographystyle{ieeetr}
 \bibliography{biblio}
