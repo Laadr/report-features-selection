@@ -1111,11 +1111,13 @@ After the calibration of the algorithm with a Python implementation, we aim to r
         \item attribute profile of each band with diagonal of bounding box as attribute and 100, 200, 500, 1000 and 20000 as thresholds (40 features)\cite{tuia2015multiclass};
         \item textural features with neighborhood of 19x19 pixels: mean, standard deviation, range and entropy (16 features)\cite{tuia2015multiclass}.
     \end{itemize}
-    These 151 features are then stacked to create a new image with 151 bands. The training is made with tile 5\_11 and we test with tiles 3\_10, 5\_12 and 7\_8.
+    These 151 features are then stacked to create a new image with 151 bands. The training is made with tile 5\_11 and we test with tile 5\_12.
 
 \section{Conclusion}
 
-
+An algorithm for the classification of high dimension data as hyperspectral image has been presented. The classifier uses GMM model to select iteratively the most relevant features. Several variation of the algorithms has been explored. Experimentations show that allowing backward step in the selection to discard already selected features do not give significant advantage. Additionally, among all the measures tested to rank the features the Jeffries-Matusita distance is both the most accurate and the fastest.
+The second achievement of our work is the development of an efficient implementation using GMM properties to derive fast update rules of the model. The resulting code is available as a remote module of the Orfeo toolbox on Github and make it possible to process huge quantity of high dimension data.
+More investigation is needed to see if the divergence measures are robust when data distribution is less similar to a Gaussian distribution. Moreover, the method should also be compared to other feature selection methods. Finally, an improvement could be made to increase the stability of the selected features. For example, a selection of continuous intervals and not band is a possible solution which has already been explored in \cite{serpico2007extraction}.
 
 \newpage
 
