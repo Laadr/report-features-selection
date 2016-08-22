@@ -1111,13 +1111,36 @@ After the calibration of the algorithm with a Python implementation, we aim to r
         \item attribute profile of each band with diagonal of bounding box as attribute and 100, 200, 500, 1000 and 20000 as thresholds (40 features)\cite{tuia2015multiclass};
         \item textural features with neighborhood of 19x19 pixels: mean, standard deviation, range and entropy (16 features)\cite{tuia2015multiclass}.
     \end{itemize}
-    These 151 features are then stacked to create a new image with 151 bands. The training is made with tile 5\_11 and we test with tile 5\_12.
+    The DSM and the raw RGBIR image are added to these 151 features and then then stacked to create a new image with 156 bands. The training is made with tile 5\_11 and we test with tile 5\_12. Figure~\ref{tab:potsdam-otbsimu} presents the obtained results.
+
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{|l|c|c|c|}\hline
+             & {\bfseries Cohen's kappa} & {\bfseries Training time (s)} & {\bfseries Classification time (s)}\\ \hline
+
+            GMM SFS kappa & 0.679 (0.007) & 100 & 300 \\
+            GMM SFS JM &    0.453 (0.226) & 1 & 400 \\
+            GMM SFFS JM &   0.453 (0.226) & 1 & 400 \\
+            GMM Ridge &     0.478 (0.014) & 10 & 2000 \\
+            KNN &           0.468 (0.002) & 1 & 1000 \\
+            Random Forest & 0.680 (0.005) & 20 & 800 \\
+
+            \hline
+        \end{tabular}
+        \caption{Results of classification with 1000 samples by class and 5 trials (standard deviation in parenthesis).\label{tab:potsdam-otbsimu}}
+    \end{figure}
+
+    As we expected, the results obtained with this second dataset does not support the same classifiers. The classification rate of GMM classifiers with Jeffries-Matusita distance as criterion function drops clearly and has a high standard deviation. It could be due to the fact that the Gaussian hypothesis, on which this metric relies a lot, is not enough verified. When the classification rate is directly used as criterion, the classifier manages to select the relevant features. It has to be noticed that with kappa only 10 to 15 features are selected when with Jeffries-Matusita distance, the maximum number of features is selected (set to 30).
+
+    The KNN classifier and the GMM classifier with Ridge regularization are also outperformed even if they get stable results.
+
+    Finally, the Random Forest classifier and the GMM with kappa as criterion are from far the best classifiers. The only difference is in the processing time. Random Forest is faster for the training process when the GMM classifier is faster for classifying.
 
 \section{Conclusion}
 
-An algorithm for the classification of high dimension data as hyperspectral image has been presented. The classifier uses GMM model to select iteratively the most relevant features. Several variation of the algorithms has been explored. Experimentations show that allowing backward step in the selection to discard already selected features do not give significant advantage. Additionally, among all the measures tested to rank the features the Jeffries-Matusita distance is both the most accurate and the fastest.
+An algorithm for the classification of high dimension data as hyperspectral image has been presented. The classifier uses GMM model to select iteratively the most relevant features. Several variation of the algorithms has been explored. Experimentations show that allowing backward step in the selection to discard already selected features do not give significant advantage. Additionally, among all the measures tested to rank the features the Jeffries-Matusita distance seems the most accurate and the fastest when data distribution is almost Gaussian but it is not the case, it seems preferable to use directly kappa as criterion function even if it implies a loss of time. We finally show that the developed GMM classifier performs at least as best as standard classifiers without features selection in particular Random Forest.
 The second achievement of our work is the development of an efficient implementation using GMM properties to derive fast update rules of the model. The resulting code is available as a remote module of the Orfeo toolbox on Github and make it possible to process huge quantity of high dimension data.
-More investigation is needed to see if the divergence measures are robust when data distribution is less similar to a Gaussian distribution. Moreover, the method should also be compared to other feature selection methods. Finally, an improvement could be made to increase the stability of the selected features. For example, a selection of continuous intervals and not band is a possible solution which has already been explored in \cite{serpico2007extraction}.
+More investigation is needed to confirm the limitation of the divergence measures when data distribution is not Gaussian. Moreover, the method should also be compared to other feature selection methods. Finally, an improvement could be made to increase the stability of the selected features. For example, with hyperspectral data, a selection of continuous intervals and not band is a possible solution which has already been explored in \cite{serpico2007extraction}.
 
 \newpage
 
