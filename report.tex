@@ -78,7 +78,7 @@
     {\Large\itshape Adrien Lagrange\par}
     \vfill
     supervised by\par
-    Dr.~Mathieu \textsc{Fauvel}
+    Mathieu \textsc{Fauvel}
 
     \vfill
 
@@ -94,7 +94,7 @@
 {\color{red}\Large\itshape This document is non-confidential. Thus, it can be broadcast outside in paper or electronic format.}
 \newpage
 
-\noindent\rule{\textwidth}{1pt}
+\noindent\rule{\textwidth}{1.5pt}
 
 \begin{abstract}
 This report presents a forward feature selection algorithm based on Gaussian mixture model (GMM) classifiers. The algorithm selects iteratively features that maximizes a criterion function which can be either a classification rate or a measure of divergence. We explore several variations of this algorithm in changing the criterion function and also in testing a floating forward variation allowing backward step to discard already selected features.
@@ -120,17 +120,17 @@ Finally, the method is tested and also compared to other classifiers using two d
 
 With the increasing number of remote sensing missions, the quantity of data available for a given landscape becomes larger and larger. Several missions are at the verge of producing huge amount of data or already produced it. After 2018, the EnMAP (Environmental Mapping and Analysis Program) satellites missioned by the German space agency will produced images with 244 spectral bands with a resolution of 30x30m and revisit every 4 days\footnote{\url{http://www.enmap.org/}}. The Hyperspectral Infrared Imager (HyspIRI) of NASA will also take images with 212 spectral bands every 5 days and the European satellites Sentinel-2 were launched successfully recently and the hyperspectral and hypertemporal data produced by this mission will be fully available at the end of 2016\footnote{\url{https://sentinel2.cnes.fr/en/sentinel-2-0}}.
 
-Therefore, data is more and more difficult to process because of computational and also statistical limits. Statistical limits are mainly due to the fast increase of the number of parameters to estimate in order to build a model as discussed in \cite{bouveyron2014model}. The computational issues are multiple. The computing infrastructure needed to process data is more and more expensive because the processing might requires a GPU and a large amount of RAM to load images which can weight a dozen of gigabytes \cite{christophe2011remote}\cite{plaza2011high}. The processing time is also limiting and requires to use parallelize computing (GPU, multi-threading). Hence, in many remote sensing applications, the extraction of features from a large amount of available data is required as assessed \cite{jimenez1998supervised}.
+Therefore, data is more and more difficult to process because of computational and also statistical limits. Statistical limits are mainly due to the fast increase, with dimension, of the number of parameters to estimate in order to build a model as discussed in \cite{bouveyron2014model}. The computational issues are multiple. The computing infrastructure needed to process data is more and more expensive because the processing might requires a GPU and a large amount of RAM to load images which can weight a dozen of gigabytes \cite{christophe2011remote}\cite{plaza2011high}. The processing time is also limiting and requires to use parallelize computing (GPU, multi-threading). Hence, in many remote sensing applications, the extraction of features from a large amount of available data is required as assessed \cite{jimenez1998supervised}.
 
 For instance, in land-cover classification, given a set of spatial, temporal and spectral features, it is possible to extract those which are the most discriminant for the purpose of classification \cite{fassnacht2014comparison}. In hyperspectral data analysis from the hundreds of available spectral channels, it is possible to reduce the number of channels to make the processing more efficient in terms of statistical complexity because of the reduction of the number of parameters to estimate and thus also in term of computational time. Moreover, dimensional reduction might improves the capacity of generalization of the classifier and avoid overfitting.
 
-There are two ways to reduce dimension as explained in \cite{Guyon:2006:FEF:1208773}: features extraction and feature selection. Feature extraction means creating new features by combining the existing ones, for example linear combination as in Principal Component Analysis \cite{jimenez1998supervised}. To the contrary, features selection select a subset of existing features. It has the advantage to be much more interpretable for the end-user. The selected subset of features corresponds to the most important features for the given task.
+There are two ways to reduce dimension as explained in \cite{Guyon:2006:FEF:1208773}: features extraction and feature selection. Feature extraction means creating new features by combining the existing ones, for example linear combination as in Principal Component Analysis \cite{jimenez1998supervised}. To the contrary, features selection selects a subset of existing features. It has the advantage to be much more interpretable for the end-user. The selected subset of features corresponds to the most important features for the given task.
 
 There is a large diversity of methods for feature selection. However, they usually do not scale well with the number of pixels to be processed as shown in \cite{fauvel2015fast}. Nevertheless, methods based on Gaussian Mixture Models (GMM) have several interesting properties that make them suitable for feature selection in the context of large amount of data. By taking advantage of their intrinsic properties, it is possible to increase the computational efficiency with respect to standard implementation.
 
 This work proposes to develop a forward feature extraction method using GMM in continuation of \cite{fauvel2015fast} and an upgrade floating forward method. The first method selects iteratively the meaningful features and the second introduces possible backward steps after each addition of a feature. An efficient implementation of the method is presented in order to handle large amount of data. Moreover, the developed algorithm is made available as a remote module of the C++ Orfeo Toolbox \cite{christophe2008orfeo}. Finally, tests are conducted to compare different variations of the method and to compare also to other classifiers (GMM, Random Forest, k-nearest-neighbor) available in the Orfeo Toolbox.
 
-The remaining of this report is organized as follows. Section~\ref{sec:hs-img} presents briefly the properties and specificities of hyperspectral images. Then Section~\ref{sec:orga} explains the organization and objectives of the internship. The Gaussian Mixture Model classifier and several ways to evaluate its performances are described in Section~\ref{sec:classif}. Section~\ref{sec:regularization} introduces the Ridge regularization method which is an alternative to feature selection. The feature selection method at the core of our work ground is presented in Section~\ref{sec:selection} and experimental results of variations of the selection method in Section~\ref{sec:gmm-results}. Finally, Section~\ref{sec:otb-implememtation} and \ref{sec:exp-otb} respectively focus on the implementation of our method in the C++ library Orfeo Toolbox and on the comparison of our classifiers to other classifiers of the toolbox.
+The remaining of this report is organized as follows. Section~\ref{sec:hs-img} presents briefly the properties and specificities of hyperspectral images. Then Section~\ref{sec:orga} explains the organization and objectives of the internship. The Gaussian Mixture Model classifier and several ways to evaluate its performances are described in Section~\ref{sec:classif}. Section~\ref{sec:regularization} introduces the Ridge regularization method which is an alternative to feature selection. The feature selection method at the core of our work is presented in Section~\ref{sec:selection} and experimental results of variations of the selection method in Section~\ref{sec:gmm-results}. Finally, Section~\ref{sec:otb-implememtation} and \ref{sec:exp-otb} respectively focus on the implementation of our method in the C++ library Orfeo Toolbox and on the comparison of our classifiers to other classifiers of the toolbox.
 
 \section{Hyperspectral imaging}
 \label{sec:hs-img}
@@ -152,7 +152,7 @@ Meanwhile, these images possess several drawbacks. First, their acquisition requ
 
     \subsection{Laboratory: DYNAFOR}
 
-    The UMR DYNAFOR, created in 2003, depends of the National Institute of Agricultural Research (INRA) and National Polytechnic Institute of Toulouse (INPT). THe lab is specialized in landscape ecology and is composed of 36 permanents employees and 9 PhD students. The lab objective is to assure the sustainable management of forest resources, the biodiversity conservation and to study ecosystem services in rural areas. To reach its goals, the lab is divided in three axes:
+    The UMR DYNAFOR, created in 2003, depends of the National Institute of Agricultural Research (INRA) and National Polytechnic Institute of Toulouse (INPT). The lab is specialized in landscape ecology and is composed of 36 permanents employees and 9 PhD students. The lab objective is to assure the sustainable management of forest resources, the biodiversity conservation and to study ecosystem services in rural areas. To reach its goals, the lab is divided in three axes:
     \begin{itemize}
         \item RAMSSES (in French: Recherche en Analyse et Modélisation de Systèmes Socio-Ecologiques Spatialisés) focus on remote sensing, geomatics and modelling,
         \item BIOFOR (Biodiversité des forêts rurales et des milieux semi-naturels dans les paysages) focus on biodiversity, forest areas and fauna,
@@ -163,19 +163,19 @@ Meanwhile, these images possess several drawbacks. First, their acquisition requ
 
     \subsection{Objectives}
 
-    Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of M.Fauvel, we want to {\bfseries reproduce the SFS selection method and develop an upgrade version} corresponding to the floating forward selection described in the previous section. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
+    Several outcomes are expected of this internship. First, based on the previous work \cite{fauvel2015fast} of M.Fauvel, we want to {\bfseries reproduce the sequential forward features selection method and develop an upgrade version} corresponding to a floating forward selection allowing backward step during selection. This first part will results in a Python code freely available on Github \footnote{\url{https://github.com/Laadr/FFFS}}.
 
-    Then, the aim is collaborate with CNES in order to {\bfseries produce an external module which could be plugged in the open-source library Orfeo Toolbox (OTB) developed by CNES} (\cite{christophe2008orfeo}). This module implements the same methods as the Python version but has to be written in C++ and be compatible with the OTB. The module obtained is a fork of a template furnished by OTB developers and is also available freely on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}}.
+    Then, the aim is to collaborate with CNES in order to {\bfseries produce an external module which could be plugged in the open-source library Orfeo Toolbox (OTB) developed by CNES} (\cite{christophe2008orfeo}). This module implements the same methods as the Python version but has to be written in C++ and be compatible with the OTB. The module obtained is a fork of a template furnished by OTB developers and is also available freely on Github \footnote{\url{https://github.com/Laadr/otbExternalFastFeaturesSelection}}.
 
-    Finally, we want to {\bfseries test the efficiency of this selection method and compare it to a kernel-based method} (\cite{camps2010remote}). The testing is conducted first on hyperspectral images where features are directly the spectral band and secondly on remote sensing images where numerous and various features are used (texture features, HoG, morphological profiles, radiometric indexes, ...).
+    Finally, we want to {\bfseries test the efficiency of this selection method and compare it to classical classifiers}. The testing is conducted first on hyperspectral images where features are directly the spectral band and secondly on remote sensing images where numerous and various features are used (texture features, morphological profiles, radiometric indexes, ...).
 
     \subsection{Planning}
 
-    As can be expected, the cycle is conducted from high-level to low-level which means that the Python code is first developed and so allow us to set definitively the structure of the algorithm. The low-level C++ code is then developed in order to assure good performances and to respect the interface with the OTB.
+    As can be expected, the cycle of development is conducted from high-level to low-level which means that the Python code is first developed and so allow us to set definitively the structure of the algorithm. The low-level C++ code is then developed in order to assure good performances and to respect the interface with the OTB.
 
     Each implementation is followed by a testing period during which the code is tested with artificial and easily manipulable data. Moreover, the development of the C++ code is done in interaction with developers of the OTB and, in particular, a first meeting is organized at the early stage of the development to assure that the best choice are made and a second meeting is set during the validation of the C++ code to get feedbacks.
 
-    The experimentation are conducted at the end to demonstrate the interest of the project. The Gantt diagram \ref{gantt} summarized the expected organization of the project.
+    The experimentation are conducted at the end to demonstrate the interest of the project. The Gantt diagram \ref{gantt} summarized the organization of the project.
 
     \begin{figure}[ht]
         \centering
@@ -248,7 +248,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
     It is interesting to notice that the covariance, its inverse and its determinant are a key element of the decision function and that the estimation of these elements suffer from the curse of dimensionality. More precisely, the number of parameters to estimate (mean vectors, covariance matrices, proportions) increases quadratically relatively to the number of features and we need at least as many samples as parameters to make an estimation which can be an issue. For example, with hyperspectral data, we face high dimensional samples but very few samples are labeled available because of the difficulty and the cost to collect ground-truth.
 
-    A lack of samples induces ill-conditioned covariance matrices and so unstable inversion and computation of the determinant. There are two major solutions to this problem. First option is to use a regularization method to stabilize the inversion of the covariance matrices. Second option is to use a features extraction method in order to reduce the dimensionality of the samples.
+    A lack of samples induces badly-conditioned covariance matrices and so unstable inversion and computation of the determinant. There are two major solutions to this problem. First option is to use a regularization method to stabilize the inversion of the covariance matrices. Second option is to use a features extraction/selection method in order to reduce the dimensionality of the samples.
 
     In our study based on GMM, a Ridge regularization method described in Section \ref{sec:regularization} is implemented. Then we focus on a feature selection method named sequential forward features selection presented in Section \ref{sec:forward-presentation} and an improvement of this algorithm, the sequential floating forward features selection introduced in Section \ref{sec:floating-presentation}.
 
@@ -385,7 +385,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
     In particular, the Ridge regularization proposes to solve the problem in adding a small value $\tau$ to each eigenvalues of the covariance matrix. In our case, we choose to add the same constant to each eigenvalues but it is not compulsory in a general case.
 
-    Thus, in practice, we choose to use Ridge regularization. To perform the regularization, the covariance matrix is decomposed with a diagonalization algorithm for symmetric matrices s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$ where $\mathbf{Q}$ is the matrix of eigenvectors and $\boldsymbol{\Lambda}$ is the diagonal matrix of eigenvalues. When the decomposition is available, the regularization almost finish and the decision function is simply rewritten as follow
+    Thus, in practice, we choose to use Ridge regularization. To perform the regularization, the covariance matrix is decomposed with a diagonalization algorithm for symmetric matrices s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$ where $\mathbf{Q}$ is the matrix of eigenvectors and $\boldsymbol{\Lambda}$ is the diagonal matrix of eigenvalues. When the decomposition is available, the regularization is almost finished and the decision function is simply rewritten as follow
 
     \begin{align}
     \label{eq:decision-ridge}
@@ -431,7 +431,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 \section{Features selection}
 \label{sec:selection}
 
-The objective of feature selection method is to select a subset of variables to describe each sample and so to get rid of high dimensionality and its curse.
+The objective of feature selection is to select a subset of variables to describe each sample and so to get rid of high dimensionality and its curse.
 
 Features selection algorithm may be divided into three types. The first type which called filter method is based uniquely on data analysis. Features are ranked according to a statistical analysis of the data. For example, the Principal Component Analysis (PCA) described in \cite{jimenez1998supervised} is a typical filter method or else various metrics \cite{bruzzone1995extension}, \cite{biesiada2007feature}, \cite{demir2008phase}.
 
@@ -589,7 +589,7 @@ Two selection algorithms are presented the sequential forward features selection
 
         We note $\boldsymbol{\Sigma}^{(k-1)}$ a covariance matrix of the $k-1^{th}$ iteration, i.e., a covariance of the selected features and $\boldsymbol{\Sigma}^{(k)}$ the corresponding covariance matrix at the $k^{th}$ iteration, i.e., the covariance of the augmented set. Then, the inverse of the covariance matrix $(\boldsymbol{\Sigma}^{(k)})^{-1}$, the quadratical term $(\mathbf{x}^{(k)})^t (\boldsymbol{\Sigma}^{(k)})^{-1} \mathbf{x}^{(k)}$ and the determinant $\log |\boldsymbol{\Sigma}^{(k)}|$ can be expressed in function of terms of the $(k-1)^{th}$ iteration. These calculi use the fact that the covariance matrix is a positive definite symmetric matrix to simplify formulae using matrices defined by blocks. These update rules are summed up hereafter and are available in \cite{webb2003statistical} (chapter 9.2).
 
-        In order to easily understand which are available and which ones needs to be computed, we choose to underline and set in red the terms already computed in the update rules.
+        In order to easily understand which terms are available and which ones needs to be computed, we choose to underline and set in red in the update rules the terms already computed.
 
         As $\boldsymbol{\Sigma}^{(k)}$ is a positive definite symmetric matrix, we can use the following notation
         \begin{equation*}
@@ -599,7 +599,7 @@ Two selection algorithms are presented the sequential forward features selection
             \mathbf{u}^t          & \sigma_{kk} \\
             \end{array}\bigg]
         \end{equation*}
-        where $\mathbf{u}$ is the $k^{th}$ column of the matrix without the diagonal element i.e. $\mathbf{u}_{i} = \boldsymbol{\Sigma}^{(k)}_{i+1,k}$ with $i \in [1,k-1]$.
+        where $\mathbf{u}$ is the $k^{th}$ column of the matrix without the diagonal element i.e. $\mathbf{u}_{i} = \boldsymbol{\Sigma}^{(k)}_{i,k}$ with $i \in [1,k-1]$.
 
         Using the formula of the inverse of a block matrix, the following formula expressing $(\boldsymbol{\Sigma}^{(k)})^{-1}$ in function of $(\boldsymbol{\Sigma}^{(k-1)})^{-1}$ is obtained
         \begin{prop}
@@ -712,7 +712,7 @@ Two selection algorithms are presented the sequential forward features selection
 
         During an iteration of the selection algorithm, it still needs to invert the covariance matrix of the previous iteration. In order to so, we choose to perform a decomposition in eigenvalues and eigenvectors using algorithm specific for symmetric matrices. In other words, we find $\boldsymbol{\Lambda}$ the diagonal matrix of eigenvalues and $\mathbf{Q}$ the matrix of eigenvectors s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$.
 
-        This decomposition has several advantages. First, it is very simple to compute the determinant once the eigenvalues are available because the determinant is equal to the product of these values. Secondly, it is possible to check the eigenvalues and so to assure a better computational stability. Due to the curse of dimensionality, the covariance matrix is sometimes badly conditioned and the results is that some eigenvalues are really small (below computational precision) and the decomposition helps us to check their actual values and if they are below EPS\_FLT which the machine maximum precision for a float, we set these eigenvalues to EPS\_FLT. For the same reason, the constant $\alpha$ used in update rules is also thresholded to EPS\_FLT. Algorithm~\ref{alg:sffs-update} details when computational stability is checked.
+        This decomposition has several advantages. First, it is very simple to compute the determinant once the eigenvalues are available because the determinant is equal to the product of these values. Secondly, it is possible to check the eigenvalues and so to assure a better computational stability. Due to the curse of dimensionality, the covariance matrix is sometimes badly conditioned and the results is that some eigenvalues are really small (below computational precision) and the decomposition helps us to check their actual values and if they are below EPS\_FLT which is the machine maximum precision for a float, we set these eigenvalues to EPS\_FLT. For the same reason, the constant $\alpha$ used in update rules is also thresholded to EPS\_FLT. Algorithm~\ref{alg:sffs-update} details when computational stability is checked.
 
         \begin{algorithm}
         \caption{Sequential floating forward features selection with updates\label{alg:sffs-update}}
@@ -762,14 +762,14 @@ Two selection algorithms are presented the sequential forward features selection
         }
         \end{algorithm}
 
-\section{Experimental results about features selection with GMM}
+\section{Experimental results: features selection with GMM}
 \label{sec:gmm-results}
 
 In this section, we discuss the results of the features selection method. The forward selection and the floating forward selection are compared and the results with the different criterion function are also discussed. All the experimentation has been conducted with a dataset presented in the next subsection.
 
     \subsection{Aisa dataset}
     \label{sec:aisa}
-    The dataset has been acquired by the AISA Eagle sensor during a flight campaign over Heves, Hungary. It contains 252 bands ranging from 395 to 975 nm. 16 classes have been defined for a total of 361,971 referenced pixels. Figure~\ref{fig:aisa} shows one channel of the multispectral image and the shapefile representing groundtruth and Table \ref{tab:aisa} presents the repartition of the various classes.
+    The Aisa dataset has been acquired by the AISA Eagle sensor during a flight campaign over Heves, Hungary. It contains 252 bands ranging from 395 to 975 nm. 16 classes have been defined for a total of 361,971 referenced pixels. Figure~\ref{fig:aisa} shows one channel of the multispectral image and the shapefile representing groundtruth and Table \ref{tab:aisa} presents the repartition of the various classes.
 
     \begin{figure}[!ht]
         \centering
@@ -821,7 +821,7 @@ In this section, we discuss the results of the features selection method. The fo
 
 
     % discuss evolution with training set size
-    It is also interesting to confirm the influence of the size of the training set. From Figure~\ref{fig:setsize}, we see that, either with an equalized training set or with a proportional training set, the classification rate is obviously better with more samples and also that the maximum is reached with more selected variables which that more samples allows to evaluate more precisely the relevant variables.
+    It is also interesting to confirm the influence of the size of the training set. From Figure~\ref{fig:setsize}, we see that, either with an equalized training set or with a proportional training set, the classification rate is obviously better with more samples and also that the maximum is reached with more selected variables which means that more samples allows to evaluate more precisely the relevant variables.
 
     \begin{figure}[!ht]
         \centering
@@ -847,7 +847,7 @@ In this section, we discuss the results of the features selection method. The fo
     \end{figure}
 
     % discuss criterion advantages
-    Now, if we take a closer to the influence of criterion function, we can see from Figure~\ref{fig:res-crit} the results of classification applied to the validation set for each of criterion presented in Section \ref{sec:criterion}. What we expected was that the criterion based on good classification mesure would be better because it would optimize directly the classification rate and maybe more flexible regarding to the Gaussian assumption. But it appears that for this given dataset, as good results are obtained with Jeffries-Matusita distance.
+    Now, if we take a closer look to the influence of criterion function, we can see from Figure~\ref{fig:res-crit} the results of classification for each of the criterion functions presented in Section \ref{sec:criterion}. What we expected was that the criterion based on good classification mesure would be better because it would optimize directly the classification rate and maybe more flexible regarding to the Gaussian assumption. But it appears that for this given dataset, as good results are obtained with Jeffries-Matusita distance.
 
     \begin{figure}[!ht]
         \centering
@@ -968,13 +968,13 @@ After the calibration of the algorithm with a Python implementation, we aim to r
 
     The \emph{GMMMachineLearningModel} class implements all these virtual methods. The \emph{Train()} aims to train the classifier using a list of samples set as a member of the class. Then, it is possible to use the method \emph{Predict()} to classify a sample and optional get the confidence in the prediction. The methods \emph{Save()} and \emph{Load()} obviously are used to save and load a trained model. And, finally, \emph{CanReadFile()} and \emph{CanWriteFile()} state the validity of a GMM model file.
 
-    In addition to these inherited methods, two noticeable methods are implemented. The \emph{Decomposition()} method perform a decomposition of a symmetric matrix in eigenvalues and eigenvectors using a function of the VNL library. It is to notice that this method check the value of the extracted eigenvalues and minor them to EPSILON\_FLT (or EPSILON\_DBL) which corresponds to computational precision.  The idea is to limit computational errors when parameters are ill-estimated due to an insufficient amount of training samples. The second interesting method is \emph{TrainTau()} which concerns the Ridge regularization. Given a set of possible regularization constant $\tau$, this method selects the most efficient value in estimating classification rate with cross-validation.
+    In addition to these inherited methods, two noticeable methods are implemented. The \emph{Decomposition()} method perform a decomposition of a symmetric matrix in eigenvalues and eigenvectors using a function of the VNL library. It is to notice that this method check the value of the extracted eigenvalues and minor them to EPSILON\_FLT (or EPSILON\_DBL) which corresponds to computational precision.  The idea is to limit computational errors when parameters are badly-estimated due to an insufficient amount of training samples. The second interesting method is \emph{TrainTau()} which concerns the Ridge regularization. Given a set of possible regularization constant $\tau$, this method selects the most efficient value in estimating classification rate with cross-validation.
 
     In term of members, the \emph{GMMMachineLearningModel} includes:
     \begin{itemize}
         \item 6 variables describing the model: the number of class, the number of features, the proportion of each class in the training set, the number of samples in each class, the mean vectors of each class and finally the covariance matrices of each class;
         \item 1 optional meta-parameter: the regularization value $\tau$ for Ridge regularization;
-        \item 1 variable the result of tau selection;
+        \item 1 variable the result of tau selection (classification rate for each tau);
         \item 4 precomputed terms used for prediction: eigenvalues of covariance matrices, eigenvectors of covariance matrices, 2 other terms.
     \end{itemize}
 
@@ -1000,7 +1000,7 @@ After the calibration of the algorithm with a Python implementation, we aim to r
 
     The last application \emph{otbcli\_PredictGMMApp} takes a raster image as input and a model file and perform classification of the image. It generates a classification map in an image file and optionally a confidence map. An other application is available in the OTB to compute classification rate from the image and a groundtruth file.
 
-\section{Experimental results comparison to classical classifiers}
+\section{Experimental results: comparison to classical classifiers}
 \label{sec:exp-otb}
 
     \subsection{Aisa dataset}
@@ -1053,7 +1053,7 @@ After the calibration of the algorithm with a Python implementation, we aim to r
 
     As we expected, the OpenCv GMM classifier was not able to handle the high dimensionality and simply classify all samples in the same class. Nevertheless, to compare with it, the dimension was reduced from 252 bands to 100 bands with a PCA. Figure~\ref{tab:aisa-otbsimu-reduced} and \ref{tab:aisa-otbsimu-time-reduced} presents the results obtained with this reduced dataset.
 
-    Three algorithms are tested with this reduced set: the GMM classifier of OpenCV library (GMM OpenCV), the GMM classifier we developed (GMM) and a GMM classifier with a sequential forward selection and Jeffries-Matusita distance as criterion (GMM SFS JM). As expected, there is no difference between our GMM classifier and OpenCV GMM classifier except that OpenCV classifier is faster for classification. We can also noticed that the GMM classifier with selection gets better results and classify faster for the very small cost of time during training.
+    Three algorithms are tested with this reduced set: the GMM classifier of OpenCV library (GMM OpenCV), the GMM classifier we developed (GMM) and a GMM classifier with a sequential forward selection and Jeffries-Matusita distance as criterion (GMM SFS JM). As expected, there is no difference between our GMM classifier and OpenCV GMM classifier except that OpenCV classifier is faster for classification. We can also noticed that the GMM classifier with selection gets better results and classify faster for a very small cost of time during training.
 
     \begin{figure}[!ht]
         \centering
@@ -1138,8 +1138,10 @@ After the calibration of the algorithm with a Python implementation, we aim to r
 
 \section{Conclusion}
 
-An algorithm for the classification of high dimension data as hyperspectral image has been presented. The classifier uses GMM model to select iteratively the most relevant features. Several variation of the algorithms has been explored. Experimentations show that allowing backward step in the selection to discard already selected features do not give significant advantage. Additionally, among all the measures tested to rank the features the Jeffries-Matusita distance seems the most accurate and the fastest when data distribution is almost Gaussian but it is not the case, it seems preferable to use directly kappa as criterion function even if it implies a loss of time. We finally show that the developed GMM classifier performs at least as best as standard classifiers without features selection in particular Random Forest.
+An algorithm for the classification of high dimension data as hyperspectral image has been presented. The classifier uses GMM model to select iteratively the most relevant features. Several variation of the algorithms has been explored. Experimentations show that allowing backward step in the selection to discard already selected features do not give significant advantage. Additionally, among all the measures tested to rank the features the Jeffries-Matusita distance seems the most accurate and the fastest when data distribution is almost Gaussian but if it is not the case, it seems preferable to use directly kappa as criterion function even if it implies a loss of time. We finally show that the developed GMM classifier performs at least as best as standard classifiers without features selection in particular Random Forest.
+
 The second achievement of our work is the development of an efficient implementation using GMM properties to derive fast update rules of the model. The resulting code is available as a remote module of the Orfeo toolbox on Github and make it possible to process huge quantity of high dimension data.
+
 More investigation is needed to confirm the limitation of the divergence measures when data distribution is not Gaussian. Moreover, the method should also be compared to other feature selection methods. Finally, an improvement could be made to increase the stability of the selected features. For example, with hyperspectral data, a selection of continuous intervals and not band is a possible solution which has already been explored in \cite{serpico2007extraction}.
 
 \newpage
