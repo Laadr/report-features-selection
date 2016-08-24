@@ -73,12 +73,13 @@
     \vspace{1cm}
     {\scshape\Large Final year internship\par}
     \vspace{1.5cm}
-    {\huge\bfseries Report : Operational Feature Selection in Gaussian Mixture Models\par}
+    {\huge\bfseries Operational Feature Selection in Gaussian Mixture Models\par}
     \vspace{2cm}
     {\Large\itshape Adrien Lagrange\par}
     \vfill
     supervised by\par
-    Mathieu \textsc{Fauvel}
+    Mathieu \textsc{Fauvel} (Dynafor, ENSAT/INRA)\par
+    Manuel \textsc{Grizonnet} (CNES)
 
     \vfill
 
@@ -1106,12 +1107,12 @@ After the calibration of the algorithm with a Python implementation, we aim to r
     In our experiment, we compute the following features using the RGBIR images:
     \begin{itemize}
         \item 15 radiometric indexes: NDVI, TNDVI, RVI, SAVI, TSAVI, MSAVI, MSAVI2, GEMI, IPVI, NDWI2, NDTI, RI, CI, BI, BI2 (see \footnote{\url{https://www.orfeo-toolbox.org//Applications/RadiometricIndices.html}});
-        \item morphological profile with reconstruction of each band with a disk of radius 5, 9, 13, 17 and 21 (40 features)\cite{tuia2015multiclass};
+        \item morphological profile with reconstruction of each band with a disk of radius 5, 9, 13, 17, 21, 25, 29, 33, 37 and 41 (80 features)\cite{tuia2015multiclass};
         \item attribute profile of each band with area as attribute and 1000, 2000, 5000, 10000 and 15000 as thresholds (40 features)\cite{tuia2015multiclass};
         \item attribute profile of each band with diagonal of bounding box as attribute and 100, 200, 500, 1000 and 20000 as thresholds (40 features)\cite{tuia2015multiclass};
         \item textural features with neighborhood of 19x19 pixels: mean, standard deviation, range and entropy (16 features)\cite{tuia2015multiclass}.
     \end{itemize}
-    The DSM and the raw RGBIR image are added to these 151 features and then then stacked to create a new image with 156 bands. The training is made with tile 5\_11 and we test with tile 5\_12. Figure~\ref{tab:potsdam-otbsimu} presents the obtained results.
+    The DSM and the raw RGBIR image are added to these 191 features and then then stacked to create a new image with 196 bands. The training is made with tile 5\_11 and we test with tile 5\_12. Figure~\ref{tab:potsdam-otbsimu} presents the obtained results.
 
     \begin{figure}[!ht]
         \centering
