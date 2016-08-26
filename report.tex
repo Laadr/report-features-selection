@@ -1109,7 +1109,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
         \subsubsection{Potsdam dataset}
 
-        This new dataset is built from a dataset of remote sensing images distributed by the International Society for Photogrammetry and Remote Sensing (ISPRS)\footnote{\url{http://www2.isprs.org/commissions/comm3/wg4/2d-sem-label-potsdam.html}}. The dataset is composed of aerial images of the urban area of Potsdam. The area is cut into 38 patches of 6000x6000 pixels with a resolution of 5cm by pixel and 4 channels are available: Red, Blue, Green and Infrared (RGBIR). A Digital Surface Model with same resolution is also provided. The groundtruth for 24 tiles are provided with 6 classes: Low vegetation, High vegetation, Impervious surfaces, Buildings, Cars, Clutter. Figure~\ref{fig:potsdam-dataset} shows the complete area and Figure~\ref{fig:potsdam-expl} a particular patch.
+        This new dataset is built from a dataset of remote sensing images distributed by the International Society for Photogrammetry and Remote Sensing (ISPRS)\footnote{\url{http://www2.isprs.org/commissions/comm3/wg4/2d-sem-label-potsdam.html}}. The dataset is composed of aerial images of the urban area of Potsdam. The area is cut into 38 patches of 6000x6000 pixels with a resolution of 5cm by pixel and 4 channels are available: Red, Blue, Green and Infrared (RGBIR). A Digital Surface Model with same resolution is also provided. The groundtruth for 24 tiles are provided with 6 classes: Low vegetation, High vegetation, Impervious surfaces, Buildings, Cars, Clutter. Table~\ref{tab:potsdam} summarized the number of samples of each class in the two images used during experimentation. Figure~\ref{fig:potsdam-dataset} shows the complete area and Figure~\ref{fig:potsdam-expl} a particular patch.
 
         \begin{figure}[!ht]
             \centering
@@ -1128,12 +1128,12 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
             \begin{tabular}[b]{lcc}\hline
               Class & Number of samples in 5\_11 & Number of samples in 5\_12 \\
               \hline
-              Clutter             &  &  \\
-              Trees               &  &  \\
-              Cars                &  &  \\
-              Buildings           &  &  \\
-              Low vegetation      &  &  \\
-              Impervious surfaces &  &  \\
+              Clutter             & 1,078,611  & 812,038 \\
+              Trees               & 4,493,295  & 2,132,368 \\
+              Cars                & 900,076    & 1,101,541 \\
+              Buildings           & 13,469,575 & 17,501,421 \\
+              Low vegetation      & 4,718,219  & 3,210,596 \\
+              Impervious surfaces & 11,340,224 & 11,242,036 \\
               \hline
             \end{tabular}
             \caption{table}{Repartition of classes in Aisa dataset.\label{tab:potsdam}}
@@ -1151,26 +1151,30 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
         \begin{table}[!ht]
             \centering
-            \begin{tabular}{|l|c|c|c|c|}\hline
-                 & {\bfseries Cohen's kappa} & {\bfseries Training time (s)} & {\bfseries Classification time (s)} & {\bfseries \# features used for classification (mean)} \\ \hline
+            \begin{tabular}{|l|c|c|c|c|c|}\hline
+                 & {\bfseries Cohen's kappa} & {\bfseries Cohen's kappa} & {\bfseries Training} & {\bfseries Classification} & {\bfseries \# features} \\
+                 & {\bfseries of 5\_11 (train)} & {\bfseries of 5\_12 (test)} & {\bfseries time (s)} & {\bfseries time (s)} & {\bfseries used to classify} \\ \hline
 
-                GMM SFS kappa & 0.679 (0.007) & 100 & 300 & 13.8 \\
-                GMM SFS JM &    0.453 (0.226) & 1 & 400   & 29.4 \\
-                GMM SFFS JM &   0.453 (0.226) & 1 & 400   & 29.4 \\
-                GMM ridge &     0.478 (0.014) & 10 & 2000 & all \\
-                KNN &           0.468 (0.002) & 1 & 1000  & all \\
-                Random Forest & 0.680 (0.005) & 20 & 800  & all \\
+                GMM SFS kappa & 0.698 (0.008) & 0.679 (0.007) & 100 & 300 & 13.8 \\
+                GMM SFS JM &    0.460 (0.221) & 0.453 (0.226) & 1 & 400   & 29.4 \\
+                GMM SFFS JM &   0.460 (0.221) & 0.453 (0.226) & 1 & 400   & 29.4 \\
+                GMM ridge &     0.521 (0.010) & 0.478 (0.014) & 10 & 2000 & all \\
+                KNN &           0.536 (0.005) & 0.468 (0.002) & 1 & 1000  & all \\
+                Random Forest & 0.734 (0.003) & 0.680 (0.005) & 20 & 800  & all \\
 
                 \hline
             \end{tabular}
             \caption{Results of classification with 1000 samples by class and 5 trials (standard deviation in parenthesis).\label{tab:potsdam-otbsimu}}
         \end{table}
 
-        As we expected, the results obtained with this second dataset does not support the same classifiers. The classification rate of GMM classifiers with Jeffries-Matusita distance as criterion function drops clearly and has a high standard deviation. It could be due to the fact that the Gaussian hypothesis, on which this metric relies a lot, is not enough verified. When the classification rate is directly used as criterion, the classifier manages to select the relevant features. It has to be noticed that with kappa only 10 to 15 features are selected when with Jeffries-Matusita distance, the maximum number of features is selected (set to 30).
+        In this case, The classification rate of GMM classifiers with Jeffries-Matusita distance as criterion function drops clearly and has a high standard deviation. It could be due to the fact that the Gaussian hypothesis, on which this metric relies a lot, is not enough verified. When the classification rate is directly used as criterion, the classifier manages to select the relevant features. It has to be noticed that with kappa only 10 to 15 features are selected when with Jeffries-Matusita distance, the maximum number of features is selected almost always (set to 30).
 
         The KNN classifier and the GMM classifier with ridge regularization are also outperformed even if they get stable results.
 
-        Finally, the Random Forest classifier and the GMM with kappa as criterion are from far the best classifiers. The only difference is in the processing time. Random Forest is faster for the training process when the GMM classifier is faster for classifying.
+        Finally, the Random Forest classifier and the GMM with kappa as criterion are from far the best classifiers. The only difference is in the processing time and also a small difference of classification rate with the training image. Random Forest is faster for the training process when the GMM classifier is faster for classifying.
+
+        Classification images of the first trial are available in Appendix~\ref{app:classif-potsdam}.
+
 
 \section{Conclusion}
 
@@ -1266,6 +1270,8 @@ Meanwhile, these images possess several drawbacks. First, their acquisition requ
     \subsection{Aisa dataset classification}
     \label{app:classif-aisa}
 
+    As explained in the core of the report, to create training and validation sets, the original polygons of our shapefile (a) where split in smaller polygons and then 50\% of the polygons are used for training (b) and 50\% for validation (c). Then, only a subset of samples of the training set is effectively used for training. In the case of Figure~\ref{fig:aisa-img-classif}, 500 samples by class were used to train the model.
+
     \begin{figure}[!ht]
         \centering
         \begin{tabular}{ccc}
@@ -1286,8 +1292,40 @@ Meanwhile, these images possess several drawbacks. First, their acquisition requ
             \includegraphics[width=0.32\textwidth]{Fig/aisa_sfs_jm_red.png} \\
             {\bfseries{(j)}} & {\bfseries{(k)}} & {\bfseries{(l)}} \\
         \end{tabular}
-        \caption{Aisa classification results: {\bfseries{(a)}} groundtruth, {\bfseries{(b)}} training polygons, {\bfseries{(c)}} test polygons, {\bfseries{(d)}} GMM SFS kappa, {\bfseries{(e)}} GMM SFS JM, {\bfseries{(f)}} GMM SFFS JM, {\bfseries{(g)}} GMM ridge, {\bfseries{(h)}} KNN, {\bfseries{(i)}} Random Forest, {\bfseries{(j)}} GMM OpenCV (reduced features), {\bfseries{(k)}} GMM (reduced features), {\bfseries{(l)}} GMM SFS JM (reduced features).}
+        \caption{Aisa classification results: {\bfseries{(a)}} groundtruth, {\bfseries{(b)}} training polygons, {\bfseries{(c)}} test polygons, {\bfseries{(d)}} GMM SFS kappa, {\bfseries{(e)}} GMM SFS JM, {\bfseries{(f)}} GMM SFFS JM, {\bfseries{(g)}} GMM ridge, {\bfseries{(h)}} KNN, {\bfseries{(i)}} Random Forest, {\bfseries{(j)}} GMM OpenCV (reduced features), {\bfseries{(k)}} GMM (reduced features), {\bfseries{(l)}} GMM SFS JM (reduced features).\label{fig:aisa-img-classif}}
     \end{figure}
+
+\clearpage
+
+    \subsection{Potsdam dataset classification}
+    \label{app:classif-potsdam}
+
+    In the case of the Potsdam dataset, image 5\_11 is used as training set and image 5\_12 as validation set. Then, the same process than with the Aisa dataset was applied. Figure~\ref{fig:pots-img-classif} presents the results obtained with 1000 samples by class for training.
+
+    \begin{figure}[!ht]
+        \centering
+        \begin{tabular}{ccc}
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_11.png} &
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_11_gt.png} &
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12.png} \\
+            {\bfseries{(a)}} & {\bfseries{(b)}} & {\bfseries{(c)}} \\
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12_gt.png} &
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12_sfs_kappa.png} &
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12_sfs_jm.png} \\
+            {\bfseries{(d)}} & {\bfseries{(e)}} & {\bfseries{(f)}} \\
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12_sffs_jm.png} &
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12_ridge.png} &
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12_knn.png} \\
+            {\bfseries{(g)}} & {\bfseries{(h)}} & {\bfseries{(i)}} \\
+            \includegraphics[width=0.25\textwidth]{Fig/pots_5_12_rf.png} &
+            &
+            \\
+            {\bfseries{(j)}} &  &  \\
+        \end{tabular}
+        \caption{Aisa classification results: {\bfseries{(a)}} tile 5\_11 (RGB), {\bfseries{(b)}} groundtruth 5\_11, {\bfseries{(c)}} tile 5\_12 (RGB), {\bfseries{(d)}} groundtruth 5\_12, {\bfseries{(e)}} GMM SFS kappa, {\bfseries{(f)}} GMM SFS JM, {\bfseries{(g)}} GMM SFFS JM, {\bfseries{(h)}} GMM ridge, {\bfseries{(i)}} KNN, {\bfseries{(j)}} Random Forest.\label{fig:pots-img-classif}}
+    \end{figure}
+
+\clearpage
 
 \bibliographystyle{ieeetr}
 \bibliography{biblio}
