@@ -32,7 +32,7 @@
 \usetikzlibrary{positioning}
 \tikzumlset{font=\scriptsize}
 
-\title{Report : Operational Feature Selection in Gaussian Mixture Models}
+\title{Operational Feature Selection in Gaussian Mixture Models}
 
 
 \author{Adrien Lagrange
@@ -104,7 +104,7 @@ Finally I thank my colleagues from Dynafor for their communicative cheerfulness 
 \newpage
 
 \noindent\rule{\textwidth}{1.5pt}
-
+\renewcommand{\abstractname}{Abstract}
 \begin{abstract}
 This report presents a forward feature selection algorithm based on Gaussian mixture model (GMM) classifiers. The algorithm selects iteratively features that maximize a criterion function which can be either a classification rate or a measure of divergence. We explore several variations of this algorithm by changing the criterion function and also by testing a floating forward variation allowing backward step to discard already selected features.
 
@@ -465,7 +465,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
             \paragraph{Sequential forward features selection}
             \label{sec:forward-presentation}
 
-            The Sequential Forward Selection (SFS) starts with an empty set of selected features. Then it tests at each step for all the remaining features the value of a criterion function $J$ chosen among the ones presented in Section \ref{sec:criterion} when the feature is added to the pool of selected features. The feature that maximizes the criterion function is definitively added to the pool of selected features and it moves to the next iteration. The algorithm stops when a given number of variables \emph{maxVarNb} has been selected. The Algorithm~\ref{alg:sfs} presents the process in details.
+            The Sequential Forward Selection (SFS) starts with an empty set of selected features. Then it tests at each step for all the remaining features the value of a criterion function $J$ chosen among the ones presented in Section \ref{sec:criterion} when the feature is added to the pool of selected features $S$. The feature that maximizes the criterion function is definitively added to the pool of selected features and it moves to the next iteration. The algorithm stops when a given number of variables \emph{maxVarNb} has been selected. The Algorithm~\ref{alg:sfs} presents the process in details.
 
             To summarize, the features are selected one by one and the set of selected features are never questioned. It results in a reasonable computational time but a suboptimal solution to the selection problem meaning that a better subset of variables could exist.
 
@@ -473,22 +473,21 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
             \caption{Sequential forward features selection\label{alg:sfs}}
             {\fontsize{10}{10}\selectfont
             \begin{algorithmic}[1]
-            \REQUIRE $\mathcal{S},J,\text{maxVarNb}$
-            \STATE $S=\emptyset$
+            \REQUIRE $\Omega,J,\text{maxVarNb}$
+            \STATE $\Omega=\emptyset$
             \STATE $F=\text{\{all variables\}}$
-            \WHILE{$\text{card}(S) \leq maxVarNb$}
+            \WHILE{$\text{card}(\Omega) \leq maxVarNb$}
             \FORALL{$f_i \in F$}
-            \STATE $R_i = J(\{S + f_i\})$
+            \STATE $R_i = J(\{\Omega + f_i\})$
             \ENDFOR
             \STATE $j=\text{arg} \max_{i} R_i$
-            \STATE $S = \{S + f_j\}$
+            \STATE $\Omega = \{\Omega + f_j\}$
             \STATE $F = F \setminus f_j$
             \ENDWHILE
-            \RETURN $S$
+            \RETURN $\Omega$
             \end{algorithmic}
             }
             \end{algorithm}
-
 
             Figure~\ref{fig:expl_dataset} shows a toy dataset with 2 classes and 2 features. The projection of the Gaussian distribution learned for each class can be visualized on the corresponding axis. In this examples, each class has been generated given a Gaussian law.
 
@@ -535,28 +534,26 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
             \caption{Sequential floating forward features selection\label{alg:sffs}}
             {\fontsize{10}{10}\selectfont
             \begin{algorithmic}[1]
-            \REQUIRE $\mathcal{S},J,\text{maxVar}$
-            \STATE $S=\emptyset$
+            \REQUIRE $J,\text{maxVarNb}$
+            \STATE $\Omega=\overbrace{(\emptyset,...,\emptyset)}^{maxVarNb}$
             \STATE $F=\text{\{all variables\}}$
             \STATE $k=0$
-            \WHILE{Repeat till $S$ contained $\text{maxVar}$ variables}
+            \WHILE{$k \neq \text{maxVarNb}$}
             \FORALL{$f_i \in F$}
-            \STATE $R_i = J(\{S{(k)} + f_i\})$
+            \STATE $R_i = J(\{\Omega_k + f_i\})$
             \ENDFOR
             \STATE $j=\text{arg} \max_{i} R_i$
-            \IF{$R_j \geq J(S^{(k+1)})$}
             \STATE $k=k+1$
-            \ELSE
-            \STATE $S^{(k+1)} = \{S{(k)} + f_i\}$
-            \STATE $k=k+1$
+            \IF{$R_j \geq J(\Omega_k)$}
+            \STATE $\Omega_k = \{\Omega_{k-1} + f_j\}$
             \STATE $\text{flag}=1$
             \WHILE{$k > 2 \text{ and } \text{flag}=1$}
-            \FORALL{$f_i \in S^{(k)}$}
-            \STATE $R_i = J(\{S{(k)}\setminus f_i\})$
+            \FORALL{$f_i \in \Omega_k$}
+            \STATE $R_i = J(\{\Omega_k \setminus f_i\})$
             \ENDFOR
             \STATE $j=\text{arg} \max_{i} R_i$
-            \IF{$R_j < J(S^{(k-1)})$}
-            \STATE $S^{(k-1)} = \{S{(k)} \setminus f_i\}$
+            \IF{$R_j > J(\Omega_{k-1})$}
+            \STATE $\Omega_{k-1} = \{\Omega_k \setminus f_j\}$
             \STATE $k=k-1$
             \ELSE
             \STATE $\text{flag}=0$
@@ -564,11 +561,10 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
             \ENDWHILE
             \ENDIF
             \ENDWHILE
-            \RETURN $S$
+            \RETURN $\Omega_{\text{maxVarNb}}$
             \end{algorithmic}
             }
             \end{algorithm}
-
 
 \section{Smart implementation}
 \label{sec:implementation}
