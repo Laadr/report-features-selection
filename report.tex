@@ -733,44 +733,50 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
 
     During an iteration of the selection algorithm, it still needs to invert the covariance matrix of the previous iteration. In order to so, we choose to perform a decomposition in eigenvalues and eigenvectors using algorithm specific for symmetric matrices. In other words, we find $\boldsymbol{\Lambda}$ the diagonal matrix of eigenvalues and $\mathbf{Q}$ the matrix of eigenvectors s.t. $\boldsymbol{\Sigma} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$.
 
-    This decomposition has several advantages. First, it is very simple to compute the determinant once the eigenvalues are available because the determinant is equal to the product of these values. Secondly, it is possible to check the eigenvalues and so to assure a better computational stability. Due to the curse of dimensionality, the covariance matrix is sometimes badly conditioned and the result is that some eigenvalues are really small (below computational precision). The decomposition helps us to check their actual values and if they are below EPS\_FLT which is the machine maximum precision for a float, we set these eigenvalues to EPS\_FLT. For the same reason, the constant $\alpha$ used in update rules is also thresholded to EPS\_FLT. Algorithm~\ref{alg:sffs-update} details when computational stability is checked. We choose to underline the steps added compared to Algorithm~\ref{alg:sffs}.
+    This decomposition has several advantages. First, it is very simple to compute the determinant once the eigenvalues are available because the determinant is equal to the product of these values. Secondly, it is possible to check the eigenvalues and so to assure a better computational stability. Due to the curse of dimensionality, the covariance matrix is sometimes badly conditioned and the result is that some eigenvalues are really small (below computational precision). The decomposition helps us to check their actual values and if they are below EPS\_FLT which is the machine maximum precision for a float, we set these eigenvalues to EPS\_FLT. For the same reason, the constant $\alpha$ used in update rules is also thresholded to EPS\_FLT. Algorithm~\ref{alg:sffs-update} details when computational stability is checked.
 
     \begin{algorithm}
     \caption{Sequential floating forward features selection with updates\label{alg:sffs-update}}
     {\fontsize{8}{8}\selectfont
     \begin{algorithmic}[1]
-    \REQUIRE $\mathcal{S},J,\text{maxVar}$
-    \STATE $S=\emptyset$
-    \STATE $F=\text{\{all variables\}}$
+    \REQUIRE $J,\text{maxVarNb}$
+    \STATE $\Omega=\overbrace{(\emptyset,...,\emptyset)}^{maxVarNb}$
+    \STATE $F=\text{\{all variables $f_i$\}}$
     \STATE $k=0$
-    \WHILE{Repeat till $S$ contained $\text{maxVar}$ variables}
-    \STATE \underline{Diagonalize $\boldsymbol{\Sigma}^{(k-1)} = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$}
-    \STATE \underline{\bfseries{for all} $\lambda_i$ \bfseries{do} $\lambda_i = \min (\text{EPS\_FLT},\lambda_i)$}
-    \STATE \underline{Precompute $(\boldsymbol{\Sigma}^{(k-1)})^{-1}$, $(\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)})^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} (\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)})$ and $\log \left(|\boldsymbol{\Sigma}^{(k-1)}|\right)$} \underline{using Propositions \ref{eq:update-inv}, \ref{eq:update-quad} and \ref{eq:update-log}}
+    \WHILE{$k < \text{maxVarNb}$}
+    \FORALL{$c \in \{1,...,C\}$}
+    \STATE Diagonalize $\boldsymbol{\Sigma}^{(k-1)}_c = \mathbf{P}_c \boldsymbol{\Lambda}_c \mathbf{P}_c^t$
+    \STATE {\bfseries for all} $\lambda_{c}(i)$ {\bfseries do} $\lambda_{c}(i) = \max (\text{EPS\_FLT},\lambda_{c}(i))$
+    \STATE Precompute {\scriptsize $(\boldsymbol{\Sigma}^{(k-1)}_c)^{-1}$, $(\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)}_c)^t (\boldsymbol{\Sigma}^{(k-1)}_c)^{-1} (\mathbf{x}^{(k-1)}- \boldsymbol{\mu}^{(k-1)}_c)$ and $\log \left(|\boldsymbol{\Sigma}^{(k-1)}_c|\right)$} using Propositions (\ref{eq:update-inv}), (\ref{eq:update-quad}) and (\ref{eq:update-log})
+    \ENDFOR
     \FORALL{$f_i \in F$}
-    \STATE \underline{Compute update constant $\alpha$}
-    \STATE \underline{$\alpha = \min (\text{EPS\_FLT},\alpha)$}
-    \STATE $R_i = J(\{S{(k)} + f_i\})$ \underline{using Equations \ref{eq:q-update}, \ref{eq:skl-update} or \ref{eq:jm-update}}
+    \FORALL{$c \in \{1,...,C\}$}
+    \STATE Compute update constant $\alpha_c$
+    \STATE $\alpha_c = \max (\text{EPS\_FLT},\alpha_c)$
+    \ENDFOR
+    \STATE $R_i = J(\{\Omega_k + f_i\})$ using Equations (\ref{eq:q-update}), (\ref{eq:skl-update}) or (\ref{eq:jm-update})
     \ENDFOR
     \STATE $j=\text{arg} \max_{i} R_i$
-    \IF{$R_j \geq J(S^{(k+1)})$}
     \STATE $k=k+1$
-    \ELSE
-    \STATE $S^{(k+1)} = \{S{(k)} + f_i\}$
-    \STATE $k=k+1$
+    \IF{$R_j \geq J(\Omega_k)$}
+    \STATE $\Omega_k = \{\Omega_{k-1} + f_j\}$
     \STATE $\text{flag}=1$
     \WHILE{$k > 2 \text{ and } \text{flag}=1$}
-    \STATE \underline{Diagonalize $\boldsymbol{\Sigma}^{(k-1)} = = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^t$}
-    \STATE \underline{\bfseries{for all} $\lambda_i$ \bfseries{do} $\lambda_i = \min (\text{EPS\_FLT},\lambda_i)$}
-    \STATE \underline{Precompute $(\boldsymbol{\Sigma}^{(k-1)})^{-1}$, $(\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)})^t (\boldsymbol{\Sigma}^{(k-1)})^{-1} (\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)})$ and $\log \left(|\boldsymbol{\Sigma}^{(k-1)}|\right)$} \underline{using Propositions \ref{eq:update-inv}, \ref{eq:update-quad} and \ref{eq:update-log}}
-    \FORALL{$f_i \in S^{(k)}$}
-    \STATE \underline{Compute update constant $\alpha$}
-    \STATE \underline{$\alpha = \min (\text{EPS\_FLT},\alpha)$}
-    \STATE $R_i = J(\{S{(k)}\setminus f_i\})$ \underline{using Equations \ref{eq:q-update}, \ref{eq:skl-update} or \ref{eq:jm-update}}
+    \FORALL{$c \in \{1,...,C\}$}
+    \STATE Diagonalize $\boldsymbol{\Sigma}^{(k-1)}_c = \mathbf{P}_c \boldsymbol{\Lambda}_c \mathbf{P}_c^t$
+    \STATE {\bfseries for all} $\lambda_{c}(i)$ {\bfseries do} $\lambda_{c}(i) = \max (\text{EPS\_FLT},\lambda_{c}(i))$
+    \STATE Precompute {\scriptsize $(\boldsymbol{\Sigma}^{(k-1)}_c)^{-1}$, $(\mathbf{x}^{(k-1)} - \boldsymbol{\mu}^{(k-1)}_c)^t (\boldsymbol{\Sigma}^{(k-1)}_c)^{-1} (\mathbf{x}^{(k-1)}- \boldsymbol{\mu}^{(k-1)}_c)$ and $\log \left(|\boldsymbol{\Sigma}^{(k-1)}_c|\right)$} using Propositions (\ref{eq:update-inv}), (\ref{eq:update-quad}) and (\ref{eq:update-log})
+    \ENDFOR
+    \FORALL{$f_i \in \Omega_k$}
+    \FORALL{$c \in \{1,...,C\}$}
+    \STATE Compute update constant $\alpha_c$
+    \STATE $\alpha_c = \max (\text{EPS\_FLT},\alpha_c)$
+    \ENDFOR
+    \STATE $R_i = J(\{\Omega_k \setminus f_i\})$ using Equations (\ref{eq:q-update}), (\ref{eq:skl-update}) or (\ref{eq:jm-update})
     \ENDFOR
     \STATE $j=\text{arg} \max_{i} R_i$
-    \IF{$R_j < J(S^{(k-1)})$}
-    \STATE $S^{(k-1)} = \{S{(k)} \setminus f_i\}$
+    \IF{$R_j > J(\Omega_{k-1})$}
+    \STATE $\Omega_{k-1} = \{\Omega_k \setminus f_j\}$
     \STATE $k=k-1$
     \ELSE
     \STATE $\text{flag}=0$
@@ -778,7 +784,7 @@ In the remaining, the following notations are used. $\mathcal{S} = \{\mathbf{x}_
     \ENDWHILE
     \ENDIF
     \ENDWHILE
-    \RETURN $S$
+    \RETURN $\Omega_{\text{maxVarNb}}$
     \end{algorithmic}
     }
     \end{algorithm}
